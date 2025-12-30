@@ -54,13 +54,15 @@
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+	  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   } }
 </script>
 
 <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+	import { GLTFSpecularGlossinessExtension } from 'three/addons/loaders/GLTFSpecularGlossinessExtension.js';
 
     // CONFIGURAÇÕES DE FÍSICA ORIGINAIS (O QUE VOCÊ GOSTOU)
     const MAX_SPEED = 2.8; const ACCEL = 0.015; const BRAKE = 0.04; const FRICTION = 0.99; const TURN = 0.032; const GRAVITY = 0.1;
@@ -264,5 +266,4 @@
     }
 </script>
 </body>
-
 </html>
