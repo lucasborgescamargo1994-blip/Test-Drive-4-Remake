@@ -143,7 +143,7 @@
 
     function loadCar() {
         const loader = new GLTFLoader();
-        loader.load('cobra.glb', (gltf) => {
+        loader.load('f1model.glb', (gltf) => {
             player.mesh = gltf.scene;
             scene.add(player.mesh);
             player.mesh.position.copy(curve.getPointAt(0)).add(new THREE.Vector3(0,2,0));
@@ -265,3 +265,4 @@
 </script>
 </body>
 </html>
+
