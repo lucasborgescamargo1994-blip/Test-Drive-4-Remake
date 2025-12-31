@@ -142,16 +142,33 @@
     }
 
     function loadCar() {
-        const loader = new GLTFLoader();
-        loader.load('cobra.glb', (gltf) => {
-            player.mesh = gltf.scene;
-            scene.add(player.mesh);
-            player.mesh.position.copy(curve.getPointAt(0)).add(new THREE.Vector3(0,2,0));
-        }, undefined, () => {
-            player.mesh = new THREE.Mesh(new THREE.BoxGeometry(2,0.8,4), new THREE.MeshStandardMaterial({color: 0xff0000}));
-            scene.add(player.mesh);
-        });
-    }
+    const loader = new GLTFLoader();
+    // Use o nome do arquivo que você subiu (ex: 'cobra.glb' ou 'cobra_fixed.glb')
+    loader.load('cobra.glb', (gltf) => {
+        player.mesh = gltf.scene;
+
+        // 1. AUMENTAR O TAMANHO (Ajuste o 5.0 conforme necessário)
+        player.mesh.scale.set(5.0, 5.0, 5.0); 
+
+        // 2. CENTRALIZAR O MODELO (Evita que o carro "flutue" ou fique enterrado)
+        const box = new THREE.Box3().setFromObject(player.mesh);
+        const center = box.getCenter(new THREE.Vector3());
+        player.mesh.position.sub(center); 
+
+        // 3. ADICIONAR AO CENÁRIO
+        scene.add(player.mesh);
+        
+        // Posiciona no início da pista
+        player.mesh.position.copy(curve.getPointAt(0)).add(new THREE.Vector3(0, 2, 0));
+        
+        console.log("Modelo carregado com sucesso!");
+    }, undefined, (error) => {
+        console.error("Erro ao carregar o modelo:", error);
+        // Fallback: se falhar, cria o cubo vermelho
+        player.mesh = new THREE.Mesh(new THREE.BoxGeometry(2,0.8,4), new THREE.MeshStandardMaterial({color: 0xff0000}));
+        scene.add(player.mesh);
+    });
+}
 
     function createPolice() {
         police.mesh = new THREE.Group();
@@ -265,6 +282,7 @@
 </script>
 </body>
 </html>
+
 
 
 
