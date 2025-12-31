@@ -148,7 +148,7 @@
         player.mesh = gltf.scene;
 
         // 1. AUMENTAR O TAMANHO (Ajuste o 5.0 conforme necessário)
-        player.mesh.scale.set(5.0, 5.0, 5.0); 
+        player.mesh.scale.set(20.0, 20.0, 20.0); 
 
         // 2. CENTRALIZAR O MODELO (Evita que o carro "flutue" ou fique enterrado)
         const box = new THREE.Box3().setFromObject(player.mesh);
@@ -282,6 +282,7 @@
 </script>
 </body>
 </html>
+
 
 
 
