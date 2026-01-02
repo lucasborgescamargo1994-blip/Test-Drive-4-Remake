@@ -110,33 +110,34 @@
     };
 
     function init() {
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        clock = new THREE.Clock();
-        
-        // AJUSTE 1: Diminuir o alcance da câmera para ganhar precisão
-        // Mudamos o Near para 1.0 e o Far para 15000 (metade do anterior)
-        camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth/window.innerHeight, 1.0, 15000);
-        
-        // AJUSTE 2: Ativar Logarithmic Depth Buffer no Renderer
-        // Isso resolve o "pisca-pisca" de prédios e triângulos pretos
-        renderer = new THREE.WebGLRenderer({ 
-            antialias: true,
-            logarithmicDepthBuffer: true // ESTA LINHA É A CHAVE
-        });
-        
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        // Melhorar a renderização de cores
-        renderer.outputColorSpace = THREE.SRGBColorSpace; 
-        
-        document.body.appendChild(renderer.domElement);
-        
-        scene.add(new THREE.AmbientLight(0xffffff, 1));
-        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-        sun.position.set(100, 500, 100);
-        scene.add(sun);
-    }
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+    clock = new THREE.Clock();
+    
+    // Near em 5.0 ajuda MUITO na precisão do Z-Buffer sem pesar nada
+    camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth/window.innerHeight, 5.0, 20000);
+    
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        precision: "highp", // Garante precisão alta sem o peso do logaritmo
+        powerPreference: "high-performance"
+    });
+    
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limita o peso em telas 4K
+    
+    // Desativar cálculos de sombra que podem estar gerando os triângulos pretos
+    renderer.shadowMap.enabled = false; 
 
+    document.body.appendChild(renderer.domElement);
+    
+    // Luz ambiente forte para evitar áreas pretas por falta de iluminação
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    
+    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+    sun.position.set(500, 1000, 500);
+    scene.add(sun);
+}
     async function loadVehicle(fileName) {
         const loader = new GLTFLoader();
         try {
@@ -174,6 +175,15 @@
         try {
             const gltf = await loader.loadAsync(GITHUB_BASE + "burnout_3_winter_city.glb");
             trackMesh = gltf.scene;
+            trackMesh.traverse(child => {
+    if (child.isMesh) {
+        // Resolve o problema de faces que piscam quando vistas de longe
+        child.material.side = THREE.FrontSide; 
+        child.material.depthWrite = true;
+        // Se houver transparência dando bug, desativamos:
+        child.material.transparent = false; 
+    }
+});
             trackMesh.scale.set(150, 150, 150); 
             scene.add(trackMesh);
         } catch(e) { 
@@ -253,5 +263,6 @@
 </script>
 </body>
 </html>
+
 
 
