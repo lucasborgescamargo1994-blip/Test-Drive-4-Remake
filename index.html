@@ -2,10 +2,9 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Test Drive 4 Remake - Fix Edition</title>
+    <title>Test Drive 4 Remake - Scale Fixed</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
-        canvas { display: block; }
         #menu-container {
             position: absolute; width: 100%; height: 100%;
             background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
@@ -13,8 +12,7 @@
         .menu-card {
             background: #222; padding: 30px; border-radius: 15px; border: 2px solid #ffcc00; text-align: center; width: 350px;
         }
-        .field { margin-bottom: 15px; text-align: left; }
-        select, input, button { width: 100%; padding: 10px; border-radius: 5px; margin-top: 5px; }
+        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; }
         button { background: #ffcc00; font-weight: bold; cursor: pointer; border: none; font-size: 18px; }
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         .dial-container {
@@ -23,32 +21,25 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         #speed-val { font-size: 40px; font-weight: bold; color: #fff; }
-        #loading-screen { position: absolute; width: 100%; height: 100%; background: #000; display: none; justify-content: center; align-items: center; z-index: 3000; color: #ffcc00; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen">CARREGANDO... AGUARDE</div>
-
 <div id="menu-container">
     <div class="menu-card">
         <h1>TD4 REMAKE</h1>
-        <div class="field">
-            <label>Carro</label>
-            <select id="car-select">
-                <option value="cobra.glb">Shelby Cobra</option>
-                <option value="jaguar.glb">Jaguar XJ220</option>
-                <option value="viper.glb">Viper RT/10</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Pista</label>
-            <select id="track-select">
-                <option value="custom">Winter City (GLB)</option>
-                <option value="original">Pista Teste</option>
-            </select>
-        </div>
-        <button id="start-btn">INICIAR</button>
+        <label>Carro</label>
+        <select id="car-select">
+            <option value="cobra.glb">Shelby Cobra</option>
+            <option value="jaguar.glb">Jaguar XJ220</option>
+            <option value="viper.glb">Viper RT/10</option>
+        </select>
+        <label style="display:block; margin-top:10px;">Pista</label>
+        <select id="track-select">
+            <option value="custom">Winter City (Burnout 3)</option>
+            <option value="original">Pista Teste</option>
+        </select>
+        <button id="start-btn">INICIAR JOGO</button>
     </div>
 </div>
 
@@ -71,10 +62,9 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const GITHUB_BASE = "https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/";
-    const TRACK_URL = "https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/burnout_3_winter_city.glb";
-
+    
     let scene, camera, renderer, clock, trackMesh;
-    let player = { mesh: null, speed: 0, lastSafePos: new THREE.Vector3(0, 0.5, 0) };
+    let player = { mesh: null, speed: 0, lastSafePos: new THREE.Vector3() };
     let gameStarted = false;
     const keys = { w: false, a: false, s: false, d: false };
 
@@ -82,53 +72,56 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         clock = new THREE.Clock();
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 5000);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 10000);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        scene.add(new THREE.AmbientLight(0xffffff, 1));
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(100, 500, 100);
+        scene.add(sun);
     }
 
     async function startRace() {
         const selectedCar = document.getElementById('car-select').value;
         const selectedTrack = document.getElementById('track-select').value;
-        
         document.getElementById('menu-container').style.display = 'none';
-        document.getElementById('loading-screen').style.display = 'flex';
 
         init();
-
         const loader = new GLTFLoader();
 
-        // 1. Carregar Pista
+        // 1. CARREGAR PISTA
         if(selectedTrack === 'custom') {
             try {
-                const gltf = await loader.loadAsync(TRACK_URL);
+                const url = GITHUB_BASE + "burnout_3_winter_city.glb";
+                const gltf = await loader.loadAsync(url);
                 trackMesh = gltf.scene;
+                
+                // AJUSTE DE ESCALA DA PISTA (Aumentando 50x para não ficar pequena)
+                trackMesh.scale.set(50, 50, 50); 
                 scene.add(trackMesh);
-                // Resetar posição da pista para garantir que não está deslocada por metadados do arquivo
-                trackMesh.position.set(0,0,0); 
-            } catch(e) { console.error("Erro pista"); createDefaultTrack(); }
+            } catch(e) { createDefaultTrack(); }
         } else {
             createDefaultTrack();
         }
 
-        // 2. Carregar Carro
+        // 2. CARREGAR CARRO
         try {
             const carGltf = await loader.loadAsync(GITHUB_BASE + selectedCar);
             player.mesh = carGltf.scene;
+            
+            // AJUSTE DE ESCALA DO CARRO (Aumentando para ser visível)
+            // Se o carro ainda estiver pequeno, aumente este valor (ex: 5, 5, 5)
+            player.mesh.scale.set(2, 2, 2); 
         } catch(e) {
-            console.warn("Carro não encontrado no GitHub, usando cubo.");
             player.mesh = new THREE.Mesh(new THREE.BoxGeometry(2,1,4), new THREE.MeshStandardMaterial({color: 0xff0000}));
         }
         
         scene.add(player.mesh);
         
-        // POSICIONAMENTO INICIAL CRÍTICO
-        // Colocamos o carro bem alto e deixamos o Raycast encontrar o chão na primeira frame
-        player.mesh.position.set(0, 50, 0); 
+        // Posição inicial: Bem alto para o Raycast encontrar o chão da pista lá embaixo
+        player.mesh.position.set(0, 100, 0); 
 
-        document.getElementById('loading-screen').style.display = 'none';
         document.getElementById('hud-layer').style.display = 'block';
         
         window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
@@ -139,9 +132,7 @@
     }
 
     function createDefaultTrack() {
-        const geo = new THREE.PlaneGeometry(1000, 1000);
-        const mat = new THREE.MeshStandardMaterial({color: 0x333333});
-        trackMesh = new THREE.Mesh(geo, mat);
+        trackMesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({color: 0x333333}));
         trackMesh.rotation.x = -Math.PI/2;
         scene.add(trackMesh);
     }
@@ -149,9 +140,8 @@
     function updatePhysics() {
         if(!player.mesh || !trackMesh) return;
 
-        // Aceleração simples
-        if(keys.w) player.speed += 0.02;
-        if(keys.s) player.speed -= 0.04;
+        if(keys.w) player.speed += 0.05;
+        if(keys.s) player.speed -= 0.08;
         player.speed *= 0.98;
 
         if(Math.abs(player.speed) > 0.1) {
@@ -162,35 +152,36 @@
         const move = new THREE.Vector3(0,0,1).applyQuaternion(player.mesh.quaternion).multiplyScalar(player.speed);
         player.mesh.position.add(move);
 
-        // RAYCAST PARA GRUDAR NO CHÃO
-        // Lançamos um raio de cima (100 unidades) para baixo
-        const rayOrigin = player.mesh.position.clone();
-        rayOrigin.y += 100; 
-        const raycaster = new THREE.Raycaster(rayOrigin, new THREE.Vector3(0, -1, 0));
+        // RAYCAST PARA GRUDAR O CARRO NO CHÃO DA PISTA
+        // Ele lança um raio de 200 metros acima do carro para baixo
+        const raycaster = new THREE.Raycaster(
+            new THREE.Vector3(player.mesh.position.x, player.mesh.position.y + 200, player.mesh.position.z),
+            new THREE.Vector3(0, -1, 0)
+        );
+        
         const intersects = raycaster.intersectObject(trackMesh, true);
 
         if (intersects.length > 0) {
-            // Ajusta o carro para a altura exata do chão da pista .glb
-            player.mesh.position.y = intersects[0].point.y + 0.2; 
+            // Coloca o carro exatamente sobre o ponto detectado
+            player.mesh.position.y = intersects[0].point.y + 0.5; 
             player.lastSafePos.copy(player.mesh.position);
         } else {
-            // Se o raio não atingir nada (carro saiu da pista), ele flutua ou volta
-            if(player.mesh.position.y < -10) player.mesh.position.copy(player.lastSafePos);
+            // Se cair no vazio, volta para a última posição segura
+            if(player.mesh.position.y < -50) player.mesh.position.copy(player.lastSafePos);
         }
     }
 
     function animate() {
         if(!gameStarted) return;
         requestAnimationFrame(animate);
-        
         updatePhysics();
 
-        // Câmera
-        const camOffset = new THREE.Vector3(0, 5, -12).applyQuaternion(player.mesh.quaternion);
+        // Câmera dinâmica baseada no tamanho do carro
+        const camOffset = new THREE.Vector3(0, 8, -20).applyQuaternion(player.mesh.quaternion);
         camera.position.lerp(player.mesh.position.clone().add(camOffset), 0.1);
         camera.lookAt(player.mesh.position);
 
-        document.getElementById('speed-val').innerText = Math.floor(Math.abs(player.speed) * 100);
+        document.getElementById('speed-val').innerText = Math.floor(Math.abs(player.speed) * 60);
         renderer.render(scene, camera);
     }
 
