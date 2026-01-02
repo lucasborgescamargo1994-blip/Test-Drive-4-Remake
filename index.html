@@ -113,10 +113,24 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         clock = new THREE.Clock();
-        camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth/window.innerHeight, 0.1, 30000);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        // AJUSTE 1: Diminuir o alcance da câmera para ganhar precisão
+        // Mudamos o Near para 1.0 e o Far para 15000 (metade do anterior)
+        camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth/window.innerHeight, 1.0, 15000);
+        
+        // AJUSTE 2: Ativar Logarithmic Depth Buffer no Renderer
+        // Isso resolve o "pisca-pisca" de prédios e triângulos pretos
+        renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            logarithmicDepthBuffer: true // ESTA LINHA É A CHAVE
+        });
+        
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Melhorar a renderização de cores
+        renderer.outputColorSpace = THREE.SRGBColorSpace; 
+        
         document.body.appendChild(renderer.domElement);
+        
         scene.add(new THREE.AmbientLight(0xffffff, 1));
         const sun = new THREE.DirectionalLight(0xffffff, 1.2);
         sun.position.set(100, 500, 100);
@@ -239,4 +253,5 @@
 </script>
 </body>
 </html>
+
 
