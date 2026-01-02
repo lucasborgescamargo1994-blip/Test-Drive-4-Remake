@@ -2,31 +2,32 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Test Drive 4 Remake - Winter City</title>
+    <title>Test Drive 4 Remake - Winter City Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
         canvas { display: block; }
         
         /* MENU INICIAL */
         #menu-container {
             position: absolute; width: 100%; height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/thumb.jpg');
-            background-size: cover; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
+            background: linear-gradient(45deg, #1a1a1a, #000);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000;
         }
         .menu-card {
-            background: rgba(0, 0, 0, 0.85); padding: 40px; border-radius: 20px;
-            border: 2px solid #ffcc00; text-align: center; backdrop-filter: blur(10px); width: 350px;
+            background: rgba(20, 20, 20, 0.95); padding: 40px; border-radius: 15px;
+            border: 2px solid #ffcc00; text-align: center; backdrop-filter: blur(10px); width: 380px;
         }
-        h1 { color: #ffcc00; margin-bottom: 20px; font-style: italic; }
+        h1 { color: #ffcc00; margin: 0 0 20px 0; font-style: italic; letter-spacing: 2px; }
         .field { margin-bottom: 20px; text-align: left; }
-        label { display: block; font-size: 12px; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
-        select, input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
+        label { display: block; font-size: 11px; color: #ffcc00; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #444; background: #111; color: white; box-sizing: border-box; }
         button { 
             width: 100%; padding: 15px; border-radius: 5px; border: none; 
             background: #ffcc00; color: #000; font-weight: bold; font-size: 18px;
             cursor: pointer; transition: 0.3s; margin-top: 10px;
         }
-        button:hover { background: #fff; transform: scale(1.02); }
+        button:hover { background: #fff; transform: scale(1.05); }
 
         /* HUD JOGO */
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
@@ -37,41 +38,40 @@
         }
         #speed-val { font-size: 50px; font-weight: 900; font-style: italic; color: #fff; text-shadow: 0 0 10px #0088ff; line-height: 1; }
         #gear-disp { position: absolute; bottom: -10px; background: #ffcc00; color: #000; padding: 5px 20px; border-radius: 10px; font-weight: bold; }
-        
         #loading-screen { position: absolute; width: 100%; height: 100%; background: #000; display: none; justify-content: center; align-items: center; z-index: 3000; font-size: 20px; color: #ffcc00; }
     </style>
 </head>
 <body>
 
-<div id="loading-screen">CARREGANDO ASSETS DO GITHUB...</div>
+<div id="loading-screen">SINCRONIZANDO COM GITHUB...</div>
 
 <div id="menu-container">
     <div class="menu-card">
         <h1>TD4 REMAKE</h1>
         <div class="field">
-            <label>Veículo</label>
+            <label>Escolha seu Carro</label>
             <select id="player-car-select"></select>
         </div>
         <div class="field">
-            <label>Oponentes</label>
-            <input type="number" id="bot-count" value="3" min="0" max="8">
+            <label>Número de Oponentes</label>
+            <input type="number" id="bot-count" value="3" min="0" max="10">
         </div>
         <div class="field">
-            <label>Circuito</label>
+            <label>Selecione a Pista</label>
             <select id="track-select">
-                <option value="custom">Winter City (Burnout 3)</option>
-                <option value="original">Test Track (Original)</option>
+                <option value="custom">Winter City (Burnout 3 GLB)</option>
+                <option value="original">Pista de Teste (Procedural)</option>
             </select>
         </div>
-        <button id="start-btn">RACE START</button>
+        <button id="start-btn">INICIAR CORRIDA</button>
     </div>
 </div>
 
 <div id="hud-layer">
     <div style="position: absolute; top: 20px; left: 20px;">
         <div style="background:rgba(0,0,0,0.8); padding:15px; border-left: 5px solid #ffcc00;">
-            <div style="font-size:11px; color:#bbb;">TIME</div>
-            <div id="timer" style="font-size:24px; font-weight: bold;">00:00.00</div>
+            <div style="font-size:11px; color:#bbb;">CRONÔMETRO</div>
+            <div id="timer" style="font-size:24px; font-weight: bold; font-family: monospace;">00:00.00</div>
         </div>
     </div>
     <div class="dial-container">
@@ -92,9 +92,9 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    // CONFIGURAÇÕES DE ASSETS
-    const GITHUB_RAW = "https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/";
-    const TRACK_URL = GITHUB_RAW + "burnout_3_winter_city.glb";
+    // CONFIGURAÇÕES GLOBAIS - LINKS RAW CORRETOS
+    const GITHUB_BASE = "https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/";
+    const TRACK_URL = GITHUB_BASE + "burnout_3_winter_city.glb";
     
     const CAR_MODELS = [
         { name: "Shelby Cobra", file: "cobra.glb" },
@@ -102,17 +102,17 @@
         { name: "Viper RT/10", file: "viper.glb" }
     ];
 
-    // FÍSICA
-    const PHYSICS = { maxSpeed: 2.8, accel: 0.018, brake: 0.045, friction: 0.985, turn: 0.035 };
+    const PHYSICS = { maxSpeed: 2.8, accel: 0.02, brake: 0.05, friction: 0.98, turn: 0.038 };
 
-    let scene, camera, renderer, clock;
-    let player = { mesh: null, speed: 0, velocity: new THREE.Vector3(), lastSafePos: new THREE.Vector3(0, 1, 0) };
+    let scene, camera, renderer, clock, curve;
+    let player = { mesh: null, speed: 0, velocity: new THREE.Vector3(), lastSafePos: new THREE.Vector3(0, 2, 0) };
     let opponents = [];
-    let trackModel = null;
+    let trackMesh = null;
     let gameStarted = false;
-    let keys = { w: false, a: false, s: false, d: false };
+    let currentTrackType = 'original';
+    const keys = { w: false, a: false, s: false, d: false };
 
-    // Inicializar Menu
+    // Popular Menu
     const carSelect = document.getElementById('player-car-select');
     CAR_MODELS.forEach((car, i) => {
         let opt = document.createElement('option');
@@ -122,77 +122,94 @@
 
     document.getElementById('start-btn').onclick = startRace;
 
-    function initScene() {
+    function initThree() {
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x222233);
-        scene.fog = new THREE.Fog(0x222233, 100, 600);
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 100, 800);
         clock = new THREE.Clock();
 
-        camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 2000);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 3000);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-        sun.position.set(50, 150, 50);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+        sun.position.set(100, 200, 100);
+        sun.castShadow = true;
         scene.add(sun);
+    }
+
+    function createOriginalTrack() {
+        const points = [
+            new THREE.Vector3(0, 0, 0), new THREE.Vector3(100, 2, 150),
+            new THREE.Vector3(350, 10, 200), new THREE.Vector3(500, 5, 0),
+            new THREE.Vector3(300, -2, -250), new THREE.Vector3(100, 0, -150)
+        ];
+        curve = new THREE.CatmullRomCurve3(points);
+        curve.closed = true;
+
+        const shape = new THREE.Shape();
+        const tw = 10;
+        shape.moveTo(-tw, 0); shape.lineTo(tw, 0); shape.lineTo(tw, 0.5); shape.lineTo(-tw, 0.5);
+        
+        const geo = new THREE.ExtrudeGeometry(shape, { steps: 150, extrudePath: curve, bevelEnabled: false });
+        trackMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x444444 }));
+        scene.add(trackMesh);
     }
 
     async function loadCar(file, isPlayer, index = 0) {
         const loader = new GLTFLoader();
-        const url = GITHUB_RAW + file;
         try {
-            const gltf = await loader.loadAsync(url);
+            const gltf = await loader.loadAsync(GITHUB_BASE + file);
             const mesh = gltf.scene;
             scene.add(mesh);
-            if(isPlayer) {
-                player.mesh = mesh;
-            } else {
-                opponents.push({ mesh, progress: index * 0.05, speed: 0.0002 + Math.random() * 0.0002 });
+            if(isPlayer) player.mesh = mesh;
+            else {
+                opponents.push({ mesh, progress: index * 0.03, sideOffset: (index % 2 === 0 ? 4 : -4) });
             }
         } catch (e) {
-            console.warn("Usando fallback para:", file);
+            console.error("Erro ao carregar carro:", file);
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(2,1,4), new THREE.MeshStandardMaterial({color: isPlayer?0xff0000:0x0000ff}));
             scene.add(mesh);
-            if(isPlayer) player.mesh = mesh; else opponents.push({ mesh, progress: index*0.05, speed: 0.0003 });
+            if(isPlayer) player.mesh = mesh; else opponents.push({ mesh, progress: index * 0.03, sideOffset: 0 });
         }
     }
 
     async function startRace() {
+        currentTrackType = document.getElementById('track-select').value;
         document.getElementById('menu-container').style.display = 'none';
         document.getElementById('loading-screen').style.display = 'flex';
 
-        initScene();
+        initThree();
 
-        const trackType = document.getElementById('track-select').value;
-        const loader = new GLTFLoader();
-
-        // Carregar Pista
-        if(trackType === 'custom') {
+        // Lógica de Pista
+        if(currentTrackType === 'custom') {
+            const loader = new GLTFLoader();
             try {
                 const gltf = await loader.loadAsync(TRACK_URL);
-                trackModel = gltf.scene;
-                scene.add(trackModel);
-            } catch (e) { console.error("Falha na pista custom"); }
+                trackMesh = gltf.scene;
+                scene.add(trackMesh);
+                trackMesh.scale.set(1, 1, 1); // Ajuste aqui se a pista do Burnout for pequena
+            } catch (e) {
+                console.error("Falha ao carregar arquivo GLB do GitHub. Usando pista teste.");
+                createOriginalTrack();
+                currentTrackType = 'original';
+            }
         } else {
-            // Pista Original (Fallback)
-            const geo = new THREE.TorusGeometry(200, 10, 16, 100);
-            trackModel = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: 0x333333}));
-            trackModel.rotation.x = Math.PI/2;
-            scene.add(trackModel);
+            createOriginalTrack();
         }
 
-        // Carregar Carros
+        // Carregar Jogador e Bots
         const playerIdx = document.getElementById('player-car-select').value;
         const botCount = parseInt(document.getElementById('bot-count').value);
 
         await loadCar(CAR_MODELS[playerIdx].file, true);
 
         for(let i = 0; i < botCount; i++) {
-            const carData = CAR_MODELS[i % CAR_MODELS.length]; // Repete se faltar modelos
-            await loadCar(carData.file, false, i + 1);
+            const model = CAR_MODELS[i % CAR_MODELS.length];
+            await loadCar(model.file, false, i + 1);
         }
 
         document.getElementById('loading-screen').style.display = 'none';
@@ -200,7 +217,6 @@
 
         window.addEventListener('keydown', e => handleKey(e, true));
         window.addEventListener('keyup', e => handleKey(e, false));
-        
         gameStarted = true;
         animate();
     }
@@ -214,36 +230,32 @@
     }
 
     function updatePhysics() {
-        if(!player.mesh || !trackModel) return;
+        if(!player.mesh || !trackMesh) return;
 
-        // Input
         if(keys.w) player.speed += PHYSICS.accel;
         if(keys.s) player.speed -= PHYSICS.brake;
         player.speed *= PHYSICS.friction;
         player.speed = Math.max(Math.min(player.speed, PHYSICS.maxSpeed), -0.5);
 
-        // Curva
         if(Math.abs(player.speed) > 0.05) {
-            const tDir = player.speed > 0 ? 1 : -1;
-            if(keys.a) player.mesh.rotation.y += PHYSICS.turn * tDir;
-            if(keys.d) player.mesh.rotation.y -= PHYSICS.turn * tDir;
+            const dir = player.speed > 0 ? 1 : -1;
+            if(keys.a) player.mesh.rotation.y += PHYSICS.turn * dir;
+            if(keys.d) player.mesh.rotation.y -= PHYSICS.turn * dir;
         }
 
-        // Movimento e Colisão
-        const velocity = new THREE.Vector3(0,0,1).applyQuaternion(player.mesh.quaternion).multiplyScalar(player.speed);
-        const nextPos = player.mesh.position.clone().add(velocity);
+        const move = new THREE.Vector3(0,0,1).applyQuaternion(player.mesh.quaternion).multiplyScalar(player.speed);
+        const nextPos = player.mesh.position.clone().add(move);
 
-        // Raycast para o chão e muretas
-        const downRay = new THREE.Raycaster(nextPos.clone().add(new THREE.Vector3(0, 10, 0)), new THREE.Vector3(0,-1,0));
-        const hits = downRay.intersectObject(trackModel, true);
+        // Raycast Híbrido (Funciona na pista original e na GLB)
+        const ray = new THREE.Raycaster(nextPos.clone().add(new THREE.Vector3(0, 15, 0)), new THREE.Vector3(0, -1, 0));
+        const hits = ray.intersectObject(trackMesh, true);
 
         if(hits.length > 0) {
             player.mesh.position.copy(nextPos);
-            player.mesh.position.y = hits[0].point.y; // Ajusta altura conforme terreno
+            player.mesh.position.y = hits[0].point.y;
             player.lastSafePos.copy(player.mesh.position);
         } else {
-            // Bateu ou saiu da pista
-            player.speed *= 0.5;
+            player.speed *= 0.8;
             player.mesh.position.lerp(player.lastSafePos, 0.1);
         }
     }
@@ -255,28 +267,34 @@
 
         updatePhysics();
 
-        // Bots
-        opponents.forEach((bot, i) => {
-            bot.mesh.translateZ(0.5); // Movimento simples para frente
-            bot.mesh.rotation.y += 0.005; // Fazem um círculo se não houver curva definida
+        // Movimentação dos Bots
+        opponents.forEach(bot => {
+            if(currentTrackType === 'original' && curve) {
+                bot.progress = (bot.progress + 0.0003) % 1;
+                const pos = curve.getPointAt(bot.progress);
+                bot.mesh.position.copy(pos).y += 0.5;
+                bot.mesh.lookAt(curve.getPointAt((bot.progress + 0.01) % 1));
+            } else {
+                bot.mesh.translateZ(0.6); // Na pista GLB eles apenas andam reto por enquanto
+                bot.mesh.rotation.y += 0.005;
+            }
         });
 
-        // Câmera
+        // Câmera Perseguição
         if(player.mesh) {
-            const camOffset = new THREE.Vector3(0, 4, -12).applyQuaternion(player.mesh.quaternion);
-            camera.position.lerp(player.mesh.position.clone().add(camOffset), 0.1);
+            const camPos = player.mesh.position.clone().add(new THREE.Vector3(0, 4, -12).applyQuaternion(player.mesh.quaternion));
+            camera.position.lerp(camPos, 0.12);
             camera.lookAt(player.mesh.position);
         }
 
         // HUD
-        const mph = Math.floor(Math.abs(player.speed) * 110);
+        const mph = Math.floor(Math.abs(player.speed) * 115);
         document.getElementById('speed-val').innerText = mph;
         document.getElementById('timer').innerText = clock.getElapsedTime().toFixed(2);
-        document.getElementById('gear-disp').innerText = mph < 10 ? "N" : (mph < 70 ? "1" : "2");
+        document.getElementById('gear-disp').innerText = mph < 10 ? "N" : (mph < 80 ? "1" : "2");
 
         renderer.render(scene, camera);
     }
 </script>
 </body>
 </html>
-
