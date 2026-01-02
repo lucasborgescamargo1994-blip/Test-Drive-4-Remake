@@ -2,18 +2,33 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Test Drive 4 Remake - Final Scale</title>
+    <title>Test Drive 4 Remake - Pause Menu Camera</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
+        
+        /* MENU INICIAL */
         #menu-container {
             position: absolute; width: 100%; height: 100%;
             background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
         }
+
+        /* MENU DE PAUSA (ESC) */
+        #pause-container {
+            position: absolute; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); 
+            display: none; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 2500; backdrop-filter: blur(5px);
+        }
+
         .menu-card {
             background: #222; padding: 30px; border-radius: 15px; border: 2px solid #ffcc00; text-align: center; width: 350px;
         }
-        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; }
-        button { background: #ffcc00; font-weight: bold; cursor: pointer; border: none; font-size: 18px; }
+        
+        .field { margin-bottom: 12px; text-align: left; }
+        label { display: block; font-size: 11px; color: #ffcc00; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
+        select, input, button { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #111; color: white; box-sizing: border-box; }
+        button { background: #ffcc00; color: #000; font-weight: bold; cursor: pointer; border: none; font-size: 18px; margin-top: 10px; }
+        
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         .dial-container {
             position: absolute; bottom: 30px; right: 30px; width: 150px; height: 150px;
@@ -21,29 +36,48 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         #speed-val { font-size: 40px; font-weight: bold; color: #fff; }
+        .pause-hint { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
 
+<div id="pause-container">
+    <div class="menu-card">
+        <h2 style="color: #ffcc00; margin-top: 0;">JOGO PAUSADO</h2>
+        <div class="field">
+            <label>FOV (Campo de Visão)</label>
+            <input type="range" id="pause-fov" min="30" max="100" value="60">
+        </div>
+        <div class="field">
+            <label>Distância da Câmera</label>
+            <input type="range" id="pause-dist" min="5" max="30" value="12">
+        </div>
+        <div class="field">
+            <label>Altura da Câmera</label>
+            <input type="range" id="pause-height" min="1" max="15" value="4">
+        </div>
+        <button onclick="togglePause()">VOLTAR AO JOGO</button>
+        <p style="font-size: 10px; color: #888; margin-top: 15px;">Pressione ESC para despausar</p>
+    </div>
+</div>
+
 <div id="menu-container">
     <div class="menu-card">
         <h1>TD4 REMAKE</h1>
-        <label>Carro</label>
-        <select id="car-select">
-            <option value="cobra.glb">Shelby Cobra</option>
-            <option value="jaguar.glb">Jaguar XJ220</option>
-            <option value="viper.glb">Viper RT/10</option>
-        </select>
-        <label style="display:block; margin-top:10px;">Pista</label>
-        <select id="track-select">
-            <option value="custom">Winter City (Burnout 3)</option>
-            <option value="original">Pista Teste</option>
-        </select>
-        <button id="start-btn">INICIAR JOGO</button>
+        <div class="field">
+            <label>Escolha o Carro</label>
+            <select id="car-select">
+                <option value="cobra.glb">Shelby Cobra</option>
+                <option value="jaguar.glb">Jaguar XJ220</option>
+                <option value="viper.glb">Viper RT/10</option>
+            </select>
+        </div>
+        <button id="start-btn">INICIAR CORRIDA</button>
     </div>
 </div>
 
 <div id="hud-layer">
+    <div class="pause-hint">Pressione ESC para Configurações de Câmera</div>
     <div class="dial-container">
         <div id="speed-val">0</div>
         <div>MPH</div>
@@ -66,13 +100,23 @@
     let scene, camera, renderer, clock, trackMesh;
     let player = { mesh: null, speed: 0, lastSafePos: new THREE.Vector3() };
     let gameStarted = false;
+    let isPaused = false;
+    
+    // Configurações de Câmera que o Menu de Pausa vai alterar
+    let camConfig = { fov: 60, dist: 12, height: 4 };
     const keys = { w: false, a: false, s: false, d: false };
+
+    // Torna a função de pausa acessível ao botão HTML
+    window.togglePause = function() {
+        isPaused = !isPaused;
+        document.getElementById('pause-container').style.display = isPaused ? 'flex' : 'none';
+    };
 
     function init() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         clock = new THREE.Clock();
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 30000);
+        camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth/window.innerHeight, 0.1, 30000);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -87,72 +131,71 @@
         try {
             const gltf = await loader.loadAsync(GITHUB_BASE + fileName);
             const mesh = gltf.scene;
-
             const box = new THREE.Box3().setFromObject(mesh);
             const size = new THREE.Vector3();
             box.getSize(size);
-
             const maxDim = Math.max(size.x, size.y, size.z);
-            // AJUSTE: Aumentado de 5.0 para 6.5 (30% maior)
             const targetSize = 6.5; 
             const scaleFactor = targetSize / maxDim;
-
             mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-            
             const center = new THREE.Vector3();
             box.getCenter(center);
             mesh.position.sub(center.multiplyScalar(scaleFactor));
-
             return mesh;
         } catch (e) {
-            console.error("Erro ao carregar modelo.");
             return new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4), new THREE.MeshStandardMaterial({ color: 0xff0000 }));
         }
     }
 
     async function startRace() {
-        const selectedCar = document.getElementById('car-select').value;
-        const selectedTrack = document.getElementById('track-select').value;
         document.getElementById('menu-container').style.display = 'none';
-
         init();
 
-        if(selectedTrack === 'custom') {
-            try {
-                const loader = new GLTFLoader();
-                const gltf = await loader.loadAsync(GITHUB_BASE + "burnout_3_winter_city.glb");
-                trackMesh = gltf.scene;
-                trackMesh.scale.set(150, 150, 150); 
-                scene.add(trackMesh);
-            } catch(e) { createDefaultTrack(); }
-        } else {
-            createDefaultTrack();
+        const loader = new GLTFLoader();
+        try {
+            const gltf = await loader.loadAsync(GITHUB_BASE + "burnout_3_winter_city.glb");
+            trackMesh = gltf.scene;
+            trackMesh.scale.set(150, 150, 150); 
+            scene.add(trackMesh);
+        } catch(e) { 
+            trackMesh = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshStandardMaterial({color: 0x333333}));
+            trackMesh.rotation.x = -Math.PI/2;
+            scene.add(trackMesh);
         }
 
+        const selectedCar = document.getElementById('car-select').value;
         player.mesh = await loadVehicle(selectedCar);
         scene.add(player.mesh);
-        
-        player.mesh.position.set(4000, 100, 1000); 
+        player.mesh.position.set(4000, 100, 0); 
 
         document.getElementById('hud-layer').style.display = 'block';
         
-        window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
-        window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
+        // Listeners de Teclado
+        window.addEventListener('keydown', e => {
+            if(e.key === 'Escape') togglePause();
+            if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true;
+        });
+        window.addEventListener('keyup', e => {
+            if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false;
+        });
+
+        // Listeners do Menu de Pausa (Slider)
+        document.getElementById('pause-fov').oninput = function() {
+            camConfig.fov = parseFloat(this.value);
+            camera.fov = camConfig.fov;
+            camera.updateProjectionMatrix();
+        };
+        document.getElementById('pause-dist').oninput = function() { camConfig.dist = parseFloat(this.value); };
+        document.getElementById('pause-height').oninput = function() { camConfig.height = parseFloat(this.value); };
 
         gameStarted = true;
         animate();
     }
 
-    function createDefaultTrack() {
-        trackMesh = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshStandardMaterial({color: 0x333333}));
-        trackMesh.rotation.x = -Math.PI/2;
-        scene.add(trackMesh);
-    }
-
     function updatePhysics() {
-        if(!player.mesh || !trackMesh) return;
+        if(!player.mesh || !trackMesh || isPaused) return;
 
-        if(keys.w) player.speed += 0.08; // Leve aumento na força para compensar o carro maior
+        if(keys.w) player.speed += 0.08;
         if(keys.s) player.speed -= 0.12;
         player.speed *= 0.985;
 
@@ -168,26 +211,24 @@
             new THREE.Vector3(player.mesh.position.x, player.mesh.position.y + 200, player.mesh.position.z),
             new THREE.Vector3(0, -1, 0)
         );
-        
         const intersects = raycaster.intersectObject(trackMesh, true);
-
         if (intersects.length > 0) {
-            // Ajuste leve no offset para o carro maior não encostar no chão
             player.mesh.position.y = intersects[0].point.y + 1.1; 
             player.lastSafePos.copy(player.mesh.position);
-        } else {
-            if(player.mesh.position.y < -50) player.mesh.position.copy(player.lastSafePos);
         }
     }
 
     function animate() {
         if(!gameStarted) return;
         requestAnimationFrame(animate);
+        
         updatePhysics();
 
-        // CAMERA AJUSTADA: Mais próxima e mais baixa (4 de altura, 12 de distância)
-        const camOffset = new THREE.Vector3(0, 4, -12).applyQuaternion(player.mesh.quaternion);
-        camera.position.lerp(player.mesh.position.clone().add(camOffset), 0.12);
+        // CAMERA - Atualiza em tempo real com base nos Sliders do Menu de Pausa
+        const camOffset = new THREE.Vector3(0, camConfig.height, -camConfig.dist).applyQuaternion(player.mesh.quaternion);
+        
+        // Lerp mais alto (0.5) para a câmera não vibrar quando despausar
+        camera.position.lerp(player.mesh.position.clone().add(camOffset), 0.5);
         camera.lookAt(player.mesh.position);
 
         document.getElementById('speed-val').innerText = Math.floor(Math.abs(player.speed) * 60);
@@ -198,5 +239,3 @@
 </script>
 </body>
 </html>
-
-
