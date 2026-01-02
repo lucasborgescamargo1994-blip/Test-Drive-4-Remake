@@ -166,7 +166,7 @@
         const selectedCar = document.getElementById('car-select').value;
         player.mesh = await loadVehicle(selectedCar);
         scene.add(player.mesh);
-        player.mesh.position.set(4000, 100, 0); 
+        player.mesh.position.set(4000, 100, 500); 
 
         document.getElementById('hud-layer').style.display = 'block';
         
@@ -239,3 +239,4 @@
 </script>
 </body>
 </html>
+
