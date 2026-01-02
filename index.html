@@ -2,54 +2,40 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Test Drive 4 - Remake</title>
+    <title>Test Drive 4 Remake</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap');
-
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; color: white; }
         
-        /* Telas de Menu */
         .overlay {
             position: absolute; width: 100%; height: 100%; 
-            background: black; /* Caso a imagem falhe */
-            background-image: url('CAMINHO_DA_SUA_IMAGEM.jpg'); /* COLOQUE SUA IMAGEM AQUI */
+            background: #111;
+            background-image: url('menu_bg.jpg'); /* Nome da sua imagem */
             background-size: cover; background-position: center;
             display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
             z-index: 5000; padding-left: 10%;
         }
 
-        .menu-box {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 40px; border-left: 8px solid #ffcc00;
-            min-width: 350px;
-        }
-
+        .menu-box { background: rgba(0, 0, 0, 0.85); padding: 40px; border-left: 8px solid #ffcc00; min-width: 350px; }
         h1, h2 { color: #ffcc00; text-transform: uppercase; margin-top: 0; }
 
         .btn {
             display: block; width: 100%; padding: 15px; margin: 10px 0;
             background: transparent; border: none; color: white;
             text-align: left; font-size: 20px; font-family: 'Orbitron';
-            cursor: pointer; transition: 0.3s; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; text-transform: uppercase;
         }
-
         .btn:hover { background: #ffcc00; color: black; padding-left: 30px; }
-
         .hidden { display: none !important; }
 
-        /* Painel de Configurações */
-        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .settings-grid label { font-size: 12px; color: #aaa; }
-        select { background: #333; color: white; border: 1px solid #ffcc00; padding: 5px; }
+        #speedometer {
+            position: absolute; bottom: 30px; right: 30px; color: #ffcc00;
+            font-size: 48px; font-weight: 900; text-shadow: 3px 3px #000; z-index: 1000;
+        }
 
         #debug-panel {
-            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85);
-            padding: 12px; border: 2px solid #ffcc00; font-size: 11px; z-index: 3000;
-        }
-        
-        #speedometer {
-            position: absolute; bottom: 20px; right: 20px; color: #ffcc00;
-            font-size: 40px; font-weight: 900; text-shadow: 2px 2px #000;
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8);
+            padding: 10px; border: 1px solid #ffcc00; font-size: 12px; z-index: 4000;
         }
     </style>
 </head>
@@ -59,8 +45,8 @@
     <div id="menu-main" class="overlay">
         <div class="menu-box">
             <h1>Test Drive 4</h1>
-            <button class="btn" onclick="showMenu('menu-tracks')">Single Race</button>
-            <button class="btn" onclick="showMenu('menu-config')">Options</button>
+            <button class="btn" onclick="showMenu('menu-tracks')">Race</button>
+            <button class="btn" onclick="showMenu('menu-config')">Settings</button>
         </div>
     </div>
 
@@ -84,151 +70,132 @@
 
     <div id="menu-config" class="overlay hidden">
         <div class="menu-box">
-            <h2>Settings</h2>
-            <div class="settings-grid">
-                <label>Graphics Quality</label>
-                <select id="cfg-gfx">
-                    <option value="high">High (Shadows)</option>
-                    <option value="low">Retro (No Shadows)</option>
-                </select>
-                <label>Internal Resolution</label>
-                <select id="cfg-res">
-                    <option value="1">100% (Native)</option>
-                    <option value="0.75">75% (Smooth)</option>
-                    <option value="0.5">50% (Classic)</option>
-                </select>
-                <label>Editor Mode</label>
-                <select id="cfg-debug">
-                    <option value="false">Disabled</option>
-                    <option value="true">Enabled</option>
-                </select>
+            <h2>Options</h2>
+            <div style="margin-bottom:20px">
+                <label>Graphics:</label>
+                <select id="cfg-gfx"><option value="high">Modern</option><option value="low">Retro</option></select><br><br>
+                <label>Resolution:</label>
+                <select id="cfg-res"><option value="1">100%</option><option value="0.5">50%</option></select><br><br>
+                <label>Debug Mode:</label>
+                <select id="cfg-debug"><option value="false">Off</option><option value="true">On</option></select>
             </div>
-            <button class="btn" onclick="showMenu('menu-main')">Save & Back</button>
+            <button class="btn" onclick="showMenu('menu-main')">Save</button>
         </div>
     </div>
 </div>
 
-<div id="debug-panel" class="hidden">
-    EDITOR MODE ON<br>
-    [SHIFT] Add Point | [C] Copy Route<br>
-    Points: <span id="pt-count">0</span>
-</div>
-
 <div id="speedometer" class="hidden">0 KM/H</div>
+<div id="debug-panel" class="hidden">EDITOR: [SHIFT] Point | [C] Copy</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-    // --- DATABASE DE PISTAS ---
-    const SAVED_TRACKS = {
-        "burnout_3_winter_city.glb": [{"x":3895.20,"y":27.09,"z":454.58},{"x":3893.22,"y":27.09,"z":449.86},{"x":3887.43,"y":27.09,"z":436.02},{"x":3881.64,"y":27.09,"z":422.19},{"x":3875.84,"y":27.09,"z":408.35},{"x":3870.05,"y":27.09,"z":394.52},{"x":3864.25,"y":27.09,"z":380.68},{"x":3858.46,"y":27.09,"z":366.85},{"x":3852.66,"y":27.09,"z":353.01},{"x":3846.87,"y":27.09,"z":339.17},{"x":3841.08,"y":27.09,"z":325.34},{"x":3835.28,"y":27.09,"z":311.50},{"x":3829.49,"y":27.09,"z":297.67},{"x":3823.69,"y":27.09,"z":283.83},{"x":3819.11,"y":27.09,"z":269.55},{"x":3815.89,"y":27.09,"z":254.90},{"x":3812.66,"y":27.09,"z":240.25},{"x":3809.44,"y":27.09,"z":225.60},{"x":3805.63,"y":27.09,"z":211.09},{"x":3800.47,"y":27.09,"z":197.01},{"x":3795.30,"y":27.09,"z":182.93},{"x":3790.14,"y":27.09,"z":168.84},{"x":3785.43,"y":27.09,"z":154.60},{"x":3781.55,"y":27.09,"z":140.11},{"x":3777.67,"y":27.17,"z":125.62},{"x":3773.80,"y":27.09,"z":111.13},{"x":3769.92,"y":27.09,"z":96.64},{"x":3766.04,"y":27.09,"z":82.15},{"x":3762.16,"y":27.09,"z":67.66},{"x":3758.28,"y":27.09,"z":53.17},{"x":3754.40,"y":27.09,"z":38.68},{"x":3750.52,"y":27.09,"z":24.19},{"x":3746.64,"y":27.09,"z":9.70},{"x":3744.88,"y":27.32,"z":-5.18},{"x":3743.66,"y":27.10,"z":-20.13},{"x":3742.43,"y":27.09,"z":-35.08},{"x":3741.21,"y":27.09,"z":-50.03},{"x":3739.99,"y":27.09,"z":-64.98},{"x":3738.77,"y":27.09,"z":-79.93},{"x":3737.86,"y":27.09,"z":-94.90},{"x":3737.99,"y":27.09,"z":-109.90},{"x":3738.11,"y":27.09,"z":-124.90},{"x":3738.84,"y":27.09,"z":-139.88},{"x":3740.98,"y":27.09,"z":-154.73},{"x":3743.13,"y":27.09,"z":-169.58},{"x":3745.63,"y":27.09,"z":-184.37},{"x":3749.26,"y":27.09,"z":-198.92},{"x":3754.03,"y":27.09,"z":-213.14},{"x":3758.79,"y":27.09,"z":-227.37},{"x":3763.56,"y":27.09,"z":-241.59},{"x":3767.47,"y":27.09,"z":-256.07},{"x":3770.94,"y":27.17,"z":-270.66},{"x":3774.41,"y":27.09,"z":-285.25},{"x":3777.88,"y":27.09,"z":-299.85},{"x":3781.35,"y":27.09,"z":-314.44},{"x":3784.82,"y":27.09,"z":-329.03},{"x":3788.29,"y":27.09,"z":-343.63},{"x":3793.39,"y":27.09,"z":-357.73},{"x":3800.02,"y":27.09,"z":-371.19},{"x":3806.66,"y":27.17,"z":-384.64},{"x":3813.30,"y":27.17,"z":-398.09},{"x":3819.94,"y":27.17,"z":-411.54},{"x":3826.57,"y":27.16,"z":-424.99},{"x":3833.75,"y":27.16,"z":-438.16},{"x":3843.56,"y":27.15,"z":-449.51},{"x":3853.54,"y":27.09,"z":-460.71},{"x":3863.53,"y":27.09,"z":-471.90},{"x":3873.51,"y":27.09,"z":-483.09},{"x":3883.50,"y":27.09,"z":-494.29},{"x":3893.48,"y":27.09,"z":-505.48},{"x":3903.47,"y":27.09,"z":-516.67},{"x":3913.45,"y":27.09,"z":-527.87},{"x":3923.44,"y":27.09,"z":-539.06},{"x":3934.04,"y":27.09,"z":-549.68},{"x":3945.44,"y":27.09,"z":-559.43},{"x":3956.84,"y":27.09,"z":-569.17},{"x":3968.24,"y":27.16,"z":-578.92},{"x":3979.64,"y":27.16,"z":-588.67},{"x":3991.04,"y":27.09,"z":-598.42},{"x":4002.44,"y":27.09,"z":-608.16},{"x":4014.75,"y":27.09,"z":-616.73},{"x":4027.72,"y":27.14,"z":-624.28},{"x":4040.68,"y":27.14,"z":-631.83},{"x":4053.64,"y":27.09,"z":-639.38},{"x":4066.60,"y":27.09,"z":-646.93},{"x":4079.56,"y":27.09,"z":-654.48},{"x":4092.53,"y":27.09,"z":-662.03},{"x":4105.49,"y":27.09,"z":-669.57},{"x":4118.45,"y":27.09,"z":-677.12},{"x":4131.41,"y":27.09,"z":-684.67},{"x":4144.37,"y":27.09,"z":-692.22},{"x":4157.34,"y":27.09,"z":-699.77},{"x":4170.30,"y":27.12,"z":-707.32},{"x":4183.26,"y":27.13,"z":-714.87},{"x":4196.22,"y":27.13,"z":-722.42},{"x":4209.18,"y":27.11,"z":-729.97},{"x":4222.14,"y":27.09,"z":-737.52},{"x":4235.11,"y":27.09,"z":-745.07},{"x":4248.07,"y":27.09,"z":-752.62},{"x":4261.03,"y":27.09,"z":-760.16},{"x":4273.99,"y":27.09,"z":-767.71},{"x":4286.95,"y":27.09,"z":-775.26},{"x":4299.92,"y":27.09,"z":-782.81},{"x":4313.30,"y":27.09,"z":-789.58},{"x":4326.89,"y":27.09,"z":-795.93},{"x":4340.48,"y":27.09,"z":-802.28},{"x":4354.76,"y":27.09,"z":-806.88},{"x":4369.26,"y":27.09,"z":-810.70},{"x":4383.77,"y":27.09,"z":-814.52},{"x":4398.27,"y":27.09,"z":-818.34},{"x":4412.50,"y":27.09,"z":-823.09},{"x":4426.61,"y":27.09,"z":-828.19},{"x":4440.71,"y":27.09,"z":-833.30},{"x":4454.82,"y":27.09,"z":-838.41},{"x":4468.37,"y":27.09,"z":-844.84},{"x":4481.65,"y":27.09,"z":-851.80},{"x":4494.94,"y":27.12,"z":-858.76},{"x":4509.10,"y":27.09,"z":-863.72},{"x":4524.07,"y":27.09,"z":-864.58},{"x":4538.91,"y":27.09,"z":-862.38},{"x":4553.49,"y":27.24,"z":-858.85},{"x":4567.08,"y":27.09,"z":-852.51},{"x":4578.60,"y":27.09,"z":-842.90},{"x":4588.02,"y":27.09,"z":-831.23},{"x":4594.82,"y":27.09,"z":-817.86},{"x":4598.69,"y":27.09,"z":-803.37},{"x":4601.79,"y":27.09,"z":-788.69},{"x":4604.89,"y":27.09,"z":-774.01},{"x":4607.99,"y":27.09,"z":-759.34},{"x":4611.09,"y":27.09,"z":-744.66},{"x":4615.17,"y":27.09,"z":-730.23},{"x":4619.58,"y":27.09,"z":-715.89},{"x":4623.99,"y":27.09,"z":-701.55},{"x":4630.30,"y":27.09,"z":-687.95},{"x":4637.21,"y":27.09,"z":-674.63},{"x":4644.11,"y":27.09,"z":-661.31},{"x":4651.01,"y":27.09,"z":-648.00},{"x":4657.91,"y":27.09,"z":-634.68},{"x":4664.53,"y":27.09,"z":-621.22},{"x":4669.58,"y":27.09,"z":-607.09},{"x":4674.63,"y":27.09,"z":-592.97},{"x":4679.10,"y":27.09,"z":-578.65},{"x":4681.54,"y":27.09,"z":-563.85},{"x":4683.98,"y":27.09,"z":-549.05},{"x":4685.18,"y":27.09,"z":-534.10},{"x":4684.93,"y":27.09,"z":-519.10},{"x":4684.68,"y":27.09,"z":-504.10},{"x":4684.43,"y":27.09,"z":-489.10},{"x":4684.17,"y":27.09,"z":-474.11},{"x":4683.92,"y":27.09,"z":-459.11},{"x":4683.67,"y":27.09,"z":-444.11},{"x":4683.42,"y":27.09,"z":-429.11},{"x":4683.16,"y":27.09,"z":-414.11},{"x":4684.98,"y":27.09,"z":-399.22},{"x":4688.08,"y":27.09,"z":-384.55},{"x":4693.78,"y":27.09,"z":-370.67},{"x":4700.08,"y":27.09,"z":-357.06},{"x":4706.48,"y":27.09,"z":-343.49},{"x":4714.92,"y":27.09,"z":-331.09},{"x":4723.64,"y":27.09,"z":-318.89},{"x":4735.14,"y":27.09,"z":-309.26},{"x":4748.46,"y":27.09,"z":-302.36},{"x":4762.17,"y":27.09,"z":-296.28},{"x":4775.88,"y":27.09,"z":-290.19},{"x":4789.59,"y":27.09,"z":-284.11},{"x":4803.31,"y":27.09,"z":-278.03},{"x":4817.02,"y":27.09,"z":-271.94},{"x":4830.73,"y":27.09,"z":-265.86},{"x":4844.44,"y":27.09,"z":-259.78},{"x":4855.55,"y":38.05,"z":-254.84},{"x":4869.26,"y":38.33,"z":-248.76},{"x":4882.97,"y":38.67,"z":-242.68},{"x":4893.25,"y":27.09,"z":-236.89},{"x":4904.55,"y":27.09,"z":-227.02},{"x":4914.25,"y":27.09,"z":-215.58},{"x":4923.95,"y":27.09,"z":-204.14},{"x":4931.81,"y":27.09,"z":-191.36},{"x":4935.47,"y":27.09,"z":-176.81},{"x":4935.61,"y":27.09,"z":-161.81},{"x":4932.74,"y":27.09,"z":-147.09},{"x":4928.36,"y":27.09,"z":-132.74},{"x":4922.55,"y":27.09,"z":-118.92},{"x":4914.25,"y":27.09,"z":-106.42},{"x":4904.88,"y":27.09,"z":-94.70},{"x":4894.81,"y":27.09,"z":-83.60},{"x":4885.22,"y":27.09,"z":-72.06},{"x":4876.18,"y":27.09,"z":-60.09},{"x":4868.93,"y":27.09,"z":-46.96},{"x":4863.72,"y":27.09,"z":-32.89},{"x":4859.48,"y":27.09,"z":-18.50},{"x":4854.43,"y":27.09,"z":-4.38},{"x":4848.29,"y":27.09,"z":9.30},{"x":4842.15,"y":27.09,"z":22.98},{"x":4836.01,"y":27.09,"z":36.67},{"x":4830.16,"y":27.09,"z":50.48},{"x":4825.92,"y":27.09,"z":64.87},{"x":4821.67,"y":27.09,"z":79.25},{"x":4817.43,"y":27.09,"z":93.64},{"x":4814.50,"y":27.09,"z":108.35},{"x":4819.91,"y":27.09,"z":122.35},{"x":4827.98,"y":27.09,"z":134.99},{"x":4836.05,"y":27.09,"z":147.63},{"x":4845.58,"y":27.09,"z":159.22},{"x":4857.57,"y":27.09,"z":168.23},{"x":4870.51,"y":27.09,"z":175.81},{"x":4883.94,"y":27.09,"z":182.51},{"x":4897.36,"y":27.09,"z":189.20},{"x":4911.57,"y":27.09,"z":194.01},{"x":4925.97,"y":27.09,"z":198.19},{"x":4940.38,"y":27.09,"z":202.37},{"x":4954.78,"y":27.09,"z":206.56},{"x":4969.19,"y":27.09,"z":210.74},{"x":4983.59,"y":27.09,"z":214.92},{"x":4998.00,"y":27.09,"z":219.11},{"x":5012.40,"y":27.09,"z":223.29},{"x":5026.23,"y":27.09,"z":229.10},{"x":5039.66,"y":27.09,"z":235.79},{"x":5053.08,"y":27.09,"z":242.48},{"x":5066.50,"y":27.09,"z":249.18},{"x":5079.93,"y":27.09,"z":255.87},{"x":5093.35,"y":27.09,"z":262.57},{"x":5106.77,"y":27.09,"z":269.26},{"x":5119.30,"y":27.09,"z":277.52},{"x":5129.15,"y":27.11,"z":288.83},{"x":5137.42,"y":27.15,"z":301.35},{"x":5144.07,"y":27.14,"z":314.79},{"x":5147.89,"y":27.13,"z":329.29},{"x":5149.09,"y":27.13,"z":344.25},{"x":5149.52,"y":27.13,"z":359.24},{"x":5149.94,"y":27.12,"z":374.23},{"x":5150.36,"y":27.12,"z":389.23},{"x":5150.78,"y":27.12,"z":404.22},{"x":5151.21,"y":27.11,"z":419.22},{"x":5151.63,"y":27.11,"z":434.21},{"x":5152.05,"y":27.11,"z":449.20},{"x":5152.15,"y":27.11,"z":464.20},{"x":5149.94,"y":27.12,"z":479.04},{"x":5147.67,"y":27.12,"z":493.87},{"x":5145.40,"y":27.13,"z":508.69},{"x":5143.13,"y":27.14,"z":523.52},{"x":5140.87,"y":27.14,"z":538.35},{"x":5138.60,"y":27.20,"z":553.18},{"x":5135.40,"y":27.14,"z":567.83},{"x":5130.51,"y":27.19,"z":582.01},{"x":5124.29,"y":27.14,"z":595.66},{"x":5117.54,"y":27.14,"z":609.06},{"x":5110.79,"y":27.14,"z":622.45},{"x":5104.03,"y":27.14,"z":635.85},{"x":5097.28,"y":27.14,"z":649.24},{"x":5090.53,"y":27.14,"z":662.64},{"x":5083.78,"y":27.14,"z":676.03},{"x":5077.03,"y":27.14,"z":689.43},{"x":5069.09,"y":27.14,"z":702.15},{"x":5059.53,"y":27.09,"z":713.71},{"x":5048.24,"y":27.11,"z":723.59},{"x":5035.62,"y":27.10,"z":731.69},{"x":5022.27,"y":27.02,"z":738.54},{"x":5008.93,"y":26.89,"z":745.39},{"x":4995.58,"y":26.56,"z":752.23},{"x":4982.25,"y":25.78,"z":759.07},{"x":4968.43,"y":24.53,"z":764.81},{"x":4954.33,"y":23.02,"z":769.78},{"x":4939.74,"y":21.46,"z":772.99},{"x":4924.94,"y":19.96,"z":775.09},{"x":4909.98,"y":18.69,"z":774.77},{"x":4895.22,"y":17.71,"z":772.19},{"x":4880.69,"y":16.88,"z":768.54},{"x":4866.86,"y":16.16,"z":762.77},{"x":4853.25,"y":15.57,"z":756.47},{"x":4840.82,"y":15.15,"z":748.09},{"x":4828.49,"y":15.03,"z":739.55},{"x":4817.29,"y":15.10,"z":729.57},{"x":4806.22,"y":15.09,"z":719.44},{"x":4795.16,"y":15.09,"z":709.32},{"x":4784.09,"y":15.09,"z":699.19},{"x":4773.02,"y":15.09,"z":689.06},{"x":4762.20,"y":15.09,"z":678.68},{"x":4751.60,"y":15.09,"z":668.07},{"x":4741.00,"y":15.09,"z":657.46},{"x":4730.40,"y":15.09,"z":646.84},{"x":4719.80,"y":15.09,"z":636.23},{"x":4709.20,"y":15.09,"z":625.62},{"x":4698.60,"y":15.09,"z":615.00},{"x":4688.00,"y":24.73,"z":604.39},{"x":4676.58,"y":29.81,"z":595.62},{"x":4640.19,"y":15.15,"z":588.50},{"x":3865.59,"y":27.09,"z":400.45}]
-    };
+    // ROTA DA PISTA (WINTER CITY)
+    const TRACK_DATA = [{"x":3895.20,"y":27.09,"z":454.58},{"x":3893.22,"y":27.09,"z":449.86},{"x":3887.43,"y":27.09,"z":436.02},{"x":3881.64,"y":27.09,"z":422.19},{"x":3875.84,"y":27.09,"z":408.35},{"x":3870.05,"y":27.09,"z":394.52},{"x":3864.25,"y":27.09,"z":380.68},{"x":3858.46,"y":27.09,"z":366.85},{"x":3852.66,"y":27.09,"z":353.01},{"x":3846.87,"y":27.09,"z":339.17},{"x":3841.08,"y":27.09,"z":325.34},{"x":3835.28,"y":27.09,"z":311.50},{"x":3829.49,"y":27.09,"z":297.67},{"x":3823.69,"y":27.09,"z":283.83},{"x":3819.11,"y":27.09,"z":269.55},{"x":3815.89,"y":27.09,"z":254.90},{"x":3812.66,"y":27.09,"z":240.25},{"x":3809.44,"y":27.09,"z":225.60},{"x":3805.63,"y":27.09,"z":211.09},{"x":3800.47,"y":27.09,"z":197.01},{"x":3795.30,"y":27.09,"z":182.93},{"x":3790.14,"y":27.09,"z":168.84},{"x":3785.43,"y":27.09,"z":154.60},{"x":3781.55,"y":27.09,"z":140.11},{"x":3777.67,"y":27.17,"z":125.62},{"x":3773.80,"y":27.09,"z":111.13},{"x":3769.92,"y":27.09,"z":96.64},{"x":3766.04,"y":27.09,"z":82.15},{"x":3762.16,"y":27.09,"z":67.66},{"x":3758.28,"y":27.09,"z":53.17},{"x":3754.40,"y":27.09,"z":38.68},{"x":3750.52,"y":27.09,"z":24.19},{"x":3746.64,"y":27.09,"z":9.70},{"x":3744.88,"y":27.32,"z":-5.18},{"x":3743.66,"y":27.10,"z":-20.13},{"x":3742.43,"y":27.09,"z":-35.08},{"x":3741.21,"y":27.09,"z":-50.03},{"x":3739.99,"y":27.09,"z":-64.98},{"x":3738.77,"y":27.09,"z":-79.93},{"x":3737.86,"y":27.09,"z":-94.90},{"x":3737.99,"y":27.09,"z":-109.90},{"x":3738.11,"y":27.09,"z":-124.90},{"x":3738.84,"y":27.09,"z":-139.88},{"x":3740.98,"y":27.09,"z":-154.73},{"x":3743.13,"y":27.09,"z":-169.58},{"x":3745.63,"y":27.09,"z":-184.37},{"x":3749.26,"y":27.09,"z":-198.92},{"x":3754.03,"y":27.09,"z":-213.14},{"x":3758.79,"y":27.09,"z":-227.37},{"x":3763.56,"y":27.09,"z":-241.59},{"x":3767.47,"y":27.09,"z":-256.07},{"x":3770.94,"y":27.17,"z":-270.66},{"x":3774.41,"y":27.09,"z":-285.25},{"x":3777.88,"y":27.09,"z":-299.85},{"x":3781.35,"y":27.09,"z":-314.44},{"x":3784.82,"y":27.09,"z":-329.03},{"x":3788.29,"y":27.09,"z":-343.63},{"x":3793.39,"y":27.09,"z":-357.73},{"x":3800.02,"y":27.09,"z":-371.19},{"x":3806.66,"y":27.17,"z":-384.64},{"x":3813.30,"y":27.17,"z":-398.09},{"x":3819.94,"y":27.17,"z":-411.54},{"x":3826.57,"y":27.16,"z":-424.99},{"x":3833.75,"y":27.16,"z":-438.16},{"x":3843.56,"y":27.15,"z":-449.51},{"x":3853.54,"y":27.09,"z":-460.71},{"x":3863.53,"y":27.09,"z":-471.90},{"x":3873.51,"y":27.09,"z":-483.09},{"x":3883.50,"y":27.09,"z":-494.29},{"x":3893.48,"y":27.09,"z":-505.48},{"x":3903.47,"y":27.09,"z":-516.67},{"x":3913.45,"y":27.09,"z":-527.87},{"x":3923.44,"y":27.09,"z":-539.06},{"x":3934.04,"y":27.09,"z":-549.68},{"x":3945.44,"y":27.09,"z":-559.43},{"x":3956.84,"y":27.09,"z":-569.17},{"x":3968.24,"y":27.16,"z":-578.92},{"x":3979.64,"y":27.16,"z":-588.67},{"x":3991.04,"y":27.09,"z":-598.42},{"x":4002.44,"y":27.09,"z":-608.16},{"x":4014.75,"y":27.09,"z":-616.73},{"x":4027.72,"y":27.14,"z":-624.28},{"x":4040.68,"y":27.14,"z":-631.83},{"x":4053.64,"y":27.09,"z":-639.38},{"x":4066.60,"y":27.09,"z":-646.93},{"x":4079.56,"y":27.09,"z":-654.48},{"x":4092.53,"y":27.09,"z":-662.03},{"x":4105.49,"y":27.09,"z":-669.57},{"x":4118.45,"y":27.09,"z":-677.12},{"x":4131.41,"y":27.09,"z":-684.67},{"x":4144.37,"y":27.09,"z":-692.22},{"x":4157.34,"y":27.09,"z":-699.77},{"x":4170.30,"y":27.12,"z":-707.32},{"x":4183.26,"y":27.13,"z":-714.87},{"x":4196.22,"y":27.13,"z":-722.42},{"x":4209.18,"y":27.11,"z":-729.97},{"x":4222.14,"y":27.09,"z":-737.52},{"x":4235.11,"y":27.09,"z":-745.07},{"x":4248.07,"y":27.09,"z":-752.62},{"x":4261.03,"y":27.09,"z":-760.16},{"x":4273.99,"y":27.09,"z":-767.71},{"x":4286.95,"y":27.09,"z":-775.26},{"x":4299.92,"y":27.09,"z":-782.81},{"x":4313.30,"y":27.09,"z":-789.58},{"x":4326.89,"y":27.09,"z":-795.93},{"x":4340.48,"y":27.09,"z":-802.28},{"x":4354.76,"y":27.09,"z":-806.88},{"x":4369.26,"y":27.09,"z":-810.70},{"x":4383.77,"y":27.09,"z":-814.52},{"x":4398.27,"y":27.09,"z":-818.34},{"x":4412.50,"y":27.09,"z":-823.09},{"x":4426.61,"y":27.09,"z":-828.19},{"x":4440.71,"y":27.09,"z":-833.30},{"x":4454.82,"y":27.09,"z":-838.41},{"x":4468.37,"y":27.09,"z":-844.84},{"x":4481.65,"y":27.09,"z":-851.80},{"x":4494.94,"y":27.12,"z":-858.76},{"x":4509.10,"y":27.09,"z":-863.72},{"x":4524.07,"y":27.09,"z":-864.58},{"x":4538.91,"y":27.09,"z":-862.38},{"x":4553.49,"y":27.24,"z":-858.85},{"x":4567.08,"y":27.09,"z":-852.51},{"x":4578.60,"y":27.09,"z":-842.90},{"x":4588.02,"y":27.09,"z":-831.23},{"x":4594.82,"y":27.09,"z":-817.86},{"x":4598.69,"y":27.09,"z":-803.37},{"x":4601.79,"y":27.09,"z":-788.69},{"x":4604.89,"y":27.09,"z":-774.01},{"x":4607.99,"y":27.09,"z":-759.34},{"x":4611.09,"y":27.09,"z":-744.66},{"x":4615.17,"y":27.09,"z":-730.23},{"x":4619.58,"y":27.09,"z":-715.89},{"x":4623.99,"y":27.09,"z":-701.55},{"x":4630.30,"y":27.09,"z":-687.95},{"x":4637.21,"y":27.09,"z":-674.63},{"x":4644.11,"y":27.09,"z":-661.31},{"x":4651.01,"y":27.09,"z":-648.00},{"x":4657.91,"y":27.09,"z":-634.68},{"x":4664.53,"y":27.09,"z":-621.22},{"x":4669.58,"y":27.09,"z":-607.09},{"x":4674.63,"y":27.09,"z":-592.97},{"x":4679.10,"y":27.09,"z":-578.65},{"x":4681.54,"y":27.09,"z":-563.85},{"x":4683.98,"y":27.09,"z":-549.05},{"x":4685.18,"y":27.09,"z":-534.10},{"x":4684.93,"y":27.09,"z":-519.10},{"x":4684.68,"y":27.09,"z":-504.10},{"x":4684.43,"y":27.09,"z":-489.10},{"x":4684.17,"y":27.09,"z":-474.11},{"x":4683.92,"y":27.09,"z":-459.11},{"x":4683.67,"y":27.09,"z":-444.11},{"x":4683.42,"y":27.09,"z":-429.11},{"x":4683.16,"y":27.09,"z":-414.11},{"x":4684.98,"y":27.09,"z":-399.22},{"x":4688.08,"y":27.09,"z":-384.55},{"x":4693.78,"y":27.09,"z":-370.67},{"x":4700.08,"y":27.09,"z":-357.06},{"x":4706.48,"y":27.09,"z":-343.49},{"x":4714.92,"y":27.09,"z":-331.09},{"x":4723.64,"y":27.09,"z":-318.89},{"x":4735.14,"y":27.09,"z":-309.26},{"x":4748.46,"y":27.09,"z":-302.36},{"x":4762.17,"y":27.09,"z":-296.28},{"x":4775.88,"y":27.09,"z":-290.19},{"x":4789.59,"y":27.09,"z":-284.11},{"x":4803.31,"y":27.09,"z":-278.03},{"x":4817.02,"y":27.09,"z":-271.94},{"x":4830.73,"y":27.09,"z":-265.86},{"x":4844.44,"y":27.09,"z":-259.78},{"x":4855.55,"y":38.05,"z":-254.84},{"x":4869.26,"y":38.33,"z":-248.76},{"x":4882.97,"y":38.67,"z":-242.68},{"x":4893.25,"y":27.09,"z":-236.89},{"x":4904.55,"y":27.09,"z":-227.02},{"x":4914.25,"y":27.09,"z":-215.58},{"x":4923.95,"y":27.09,"z":-204.14},{"x":4931.81,"y":27.09,"z":-191.36},{"x":4935.47,"y":27.09,"z":-176.81},{"x":4935.61,"y":27.09,"z":-161.81},{"x":4932.74,"y":27.09,"z":-147.09},{"x":4928.36,"y":27.09,"z":-132.74},{"x":4922.55,"y":27.09,"z":-118.92},{"x":4914.25,"y":27.09,"z":-106.42},{"x":4904.88,"y":27.09,"z":-94.70},{"x":4894.81,"y":27.09,"z":-83.60},{"x":4885.22,"y":27.09,"z":-72.06},{"x":4876.18,"y":27.09,"z":-60.09},{"x":4868.93,"y":27.09,"z":-46.96},{"x":4863.72,"y":27.09,"z":-32.89},{"x":4859.48,"y":27.09,"z":-18.50},{"x":4854.43,"y":27.09,"z":-4.38},{"x":4848.29,"y":27.09,"z":9.30},{"x":4842.15,"y":27.09,"z":22.98},{"x":4836.01,"y":27.09,"z":36.67},{"x":4830.16,"y":27.09,"z":50.48},{"x":4825.92,"y":27.09,"z":64.87},{"x":4821.67,"y":27.09,"z":79.25},{"x":4817.43,"y":27.09,"z":93.64},{"x":4814.50,"y":27.09,"z":108.35},{"x":4819.91,"y":27.09,"z":122.35},{"x":4827.98,"y":27.09,"z":134.99},{"x":4836.05,"y":27.09,"z":147.63},{"x":4845.58,"y":27.09,"z":159.22},{"x":4857.57,"y":27.09,"z":168.23},{"x":4870.51,"y":27.09,"z":175.81},{"x":4883.94,"y":27.09,"z":182.51},{"x":4897.36,"y":27.09,"z":189.20},{"x":4911.57,"y":27.09,"z":194.01},{"x":4925.97,"y":27.09,"z":198.19},{"x":4940.38,"y":27.09,"z":202.37},{"x":4954.78,"y":27.09,"z":206.56},{"x":4969.19,"y":27.09,"z":210.74},{"x":4983.59,"y":27.09,"z":214.92},{"x":4998.00,"y":27.09,"z":219.11},{"x":5012.40,"y":27.09,"z":223.29},{"x":5026.23,"y":27.09,"z":229.10},{"x":5039.66,"y":27.09,"z":235.79},{"x":5053.08,"y":27.09,"z":242.48},{"x":5066.50,"y":27.09,"z":249.18},{"x":5079.93,"y":27.09,"z":255.87},{"x":5093.35,"y":27.09,"z":262.57},{"x":5106.77,"y":27.09,"z":269.26},{"x":5119.30,"y":27.09,"z":277.52},{"x":5129.15,"y":27.11,"z":288.83},{"x":5137.42,"y":27.15,"z":301.35},{"x":5144.07,"y":27.14,"z":314.79},{"x":5147.89,"y":27.13,"z":329.29},{"x":5149.09,"y":27.13,"z":344.25},{"x":5149.52,"y":27.13,"z":359.24},{"x":5149.94,"y":27.12,"z":374.23},{"x":5150.36,"y":27.12,"z":389.23},{"x":5150.78,"y":27.12,"z":404.22},{"x":5151.21,"y":27.11,"z":419.22},{"x":5151.63,"y":27.11,"z":434.21},{"x":5152.05,"y":27.11,"z":449.20},{"x":5152.15,"y":27.11,"z":464.20},{"x":5149.94,"y":27.12,"z":479.04},{"x":5147.67,"y":27.12,"z":493.87},{"x":5145.40,"y":27.13,"z":508.69},{"x":5143.13,"y":27.14,"z":523.52},{"x":5140.87,"y":27.14,"z":538.35},{"x":5138.60,"y":27.20,"z":553.18},{"x":5135.40,"y":27.14,"z":567.83},{"x":5130.51,"y":27.19,"z":582.01},{"x":5124.29,"y":27.14,"z":595.66},{"x":5117.54,"y":27.14,"z":609.06},{"x":5110.79,"y":27.14,"z":622.45},{"x":5104.03,"y":27.14,"z":635.85},{"x":5097.28,"y":27.14,"z":649.24},{"x":5090.53,"y":27.14,"z":662.64},{"x":5083.78,"y":27.14,"z":676.03},{"x":5077.03,"y":27.14,"z":689.43},{"x":5069.09,"y":27.14,"z":702.15},{"x":5059.53,"y":27.09,"z":713.71},{"x":5048.24,"y":27.11,"z":723.59},{"x":5035.62,"y":27.10,"z":731.69},{"x":5022.27,"y":27.02,"z":738.54},{"x":5008.93,"y":26.89,"z":745.39},{"x":4995.58,"y":26.56,"z":752.23},{"x":4982.25,"y":25.78,"z":759.07},{"x":4968.43,"y":24.53,"z":764.81},{"x":4954.33,"y":23.02,"z":769.78},{"x":4939.74,"y":21.46,"z":772.99},{"x":4924.94,"y":19.96,"z":775.09},{"x":4909.98,"y":18.69,"z":774.77},{"x":4895.22,"y":17.71,"z":772.19},{"x":4880.69,"y":16.88,"z":768.54},{"x":4866.86,"y":16.16,"z":762.77},{"x":4853.25,"y":15.57,"z":756.47},{"x":4840.82,"y":15.15,"z":748.09},{"x":4828.49,"y":15.03,"z":739.55},{"x":4817.29,"y":15.10,"z":729.57},{"x":4806.22,"y":15.09,"z":719.44},{"x":4795.16,"y":15.09,"z":709.32},{"x":4784.09,"y":15.09,"z":699.19},{"x":4773.02,"y":15.09,"z":689.06},{"x":4762.20,"y":15.09,"z":678.68},{"x":4751.60,"y":15.09,"z":668.07},{"x":4741.00,"y":15.09,"z":657.46},{"x":4730.40,"y":15.09,"z":646.84},{"x":4719.80,"y":15.09,"z":636.23},{"x":4709.20,"y":15.09,"z":625.62},{"x":4698.60,"y":15.09,"z":615.00},{"x":4688.00,"y":24.73,"z":604.39},{"x":4676.58,"y":29.81,"z":595.62},{"x":4640.19,"y":15.15,"z":588.50},{"x":3865.59,"y":27.09,"z":400.45}];
 
-    // --- CONFIGURAÇÕES CARROS ---
+    // CONFIGURAÇÕES CARROS
     const CAR_SETTINGS = {
         "cobra.glb": { scale: 3.5, topSpeed: 2.8, name: "Shelby Cobra" },
         "viper.glb": { scale: 4.2, topSpeed: 3.2, name: "Dodge Viper" },
         "jaguar.glb": { scale: 4.0, topSpeed: 3.5, name: "Jaguar XJ220" }
     };
 
-    // --- VARIÁVEIS GLOBAIS ---
     let scene, camera, renderer, trackMesh;
-    let player = { mesh: null, speed: 0, route: [], currentCar: "", currentTrack: "" };
+    let player = { mesh: null, speed: 0, currentCar: "", currentTrack: "", route: TRACK_DATA };
     let opponents = [];
     let keys = {};
-    let isPaused = false;
     let gameStarted = false;
     let debugMode = false;
     let roadLine;
 
     const loader = new THREE.GLTFLoader();
 
-    function showMenu(menuId) {
-        document.querySelectorAll('.overlay').forEach(m => m.classList.add('hidden'));
-        document.getElementById(menuId).classList.remove('hidden');
+    function showMenu(id) {
+        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     }
 
-    function selectTrack(trackFile) {
-        player.currentTrack = trackFile;
-        player.route = SAVED_TRACKS[trackFile] || [];
+    function selectTrack(file) {
+        player.currentTrack = file;
         showMenu('menu-cars');
-    }
-
-    // --- INICIALIZAÇÃO DO MOTOR ---
-    function initEngine() {
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        const light = new THREE.DirectionalLight(0xffffff, 1.2);
-        light.position.set(100, 500, 100);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040, 1.5));
     }
 
     async function startGame(carFile) {
         player.currentCar = carFile;
-        
-        // Aplicar Configurações
         debugMode = document.getElementById('cfg-debug').value === "true";
-        const res = parseFloat(document.getElementById('cfg-res').value);
-        renderer.setPixelRatio(window.devicePixelRatio * res);
         
-        if(document.getElementById('cfg-gfx').value === "high") {
-            renderer.shadowMap.enabled = true;
-        }
-
+        // Esconder UI
         document.getElementById('ui-wrapper').classList.add('hidden');
         document.getElementById('speedometer').classList.remove('hidden');
         if(debugMode) document.getElementById('debug-panel').classList.remove('hidden');
 
+        initEngine();
         await buildWorld();
         gameStarted = true;
         animate();
     }
 
+    function initEngine() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // Céu azul para teste
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 30000);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const res = parseFloat(document.getElementById('cfg-res').value);
+        renderer.setPixelRatio(window.devicePixelRatio * res);
+        document.body.appendChild(renderer.domElement);
+
+        // ILUMINAÇÃO REFORÇADA (Evita o "tudo preto")
+        const ambient = new THREE.AmbientLight(0xffffff, 1.5); // Luz vindo de todo lugar
+        scene.add(ambient);
+        
+        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+        sun.position.set(100, 1000, 100);
+        scene.add(sun);
+    }
+
     async function buildWorld() {
-        // 1. Carregar Pista
-        const gltfTrack = await loader.loadAsync(player.currentTrack);
-        trackMesh = gltfTrack.scene;
-        scene.add(trackMesh);
+        try {
+            // 1. Mapa
+            const trackGltf = await loader.loadAsync(player.currentTrack);
+            trackMesh = trackGltf.scene;
+            scene.add(trackMesh);
 
-        // 2. Criar Linha de Guia (Apenas visível no Debug)
-        const points = player.route.map(p => new THREE.Vector3(p.x, p.y + 0.5, p.z));
-        const geo = new THREE.BufferGeometry().setFromPoints(points);
-        roadLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffff00 }));
-        roadLine.visible = debugMode;
-        scene.add(roadLine);
+            // 2. Linha Guia
+            const pts = player.route.map(p => new THREE.Vector3(p.x, p.y + 0.5, p.z));
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            roadLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffff00 }));
+            roadLine.visible = debugMode;
+            scene.add(roadLine);
 
-        // 3. Carregar Player
-        player.mesh = await loadCar(player.currentCar);
-        if(player.route.length > 0) {
-            player.mesh.position.set(player.route[0].x, player.route[0].y, player.route[0].z);
-        }
-        scene.add(player.mesh);
-
-        // 4. Carregar 7 Oponentes Aleatórios
-        const carFiles = Object.keys(CAR_SETTINGS);
-        for(let i=0; i<7; i++) {
-            const randomCar = carFiles[Math.floor(Math.random() * carFiles.length)];
-            const mesh = await loadCar(randomCar);
-            
-            // Posicionamento inicial (atrás do player ou espalhado)
+            // 3. Player
+            player.mesh = await loadCar(player.currentCar);
             if(player.route.length > 0) {
-                mesh.position.set(player.route[0].x + (i*10), player.route[0].y, player.route[0].z + (i*10));
+                player.mesh.position.set(player.route[0].x, player.route[0].y + 2, player.route[0].z);
             }
-            
-            scene.add(mesh);
-            opponents.push({
-                mesh: mesh,
-                targetIdx: 1,
-                speed: 0,
-                config: CAR_SETTINGS[randomCar],
-                offset: new THREE.Vector3(Math.random()*6-3, 0, Math.random()*6-3)
-            });
+            scene.add(player.mesh);
+
+            // 4. 7 Rivais
+            const carOptions = Object.keys(CAR_SETTINGS);
+            for(let i=0; i<7; i++) {
+                const randomCar = carOptions[Math.floor(Math.random() * carOptions.length)];
+                const mesh = await loadCar(randomCar);
+                mesh.position.set(player.route[0].x + (i*8+5), player.route[0].y + 2, player.route[0].z + (i*5));
+                scene.add(mesh);
+                opponents.push({
+                    mesh: mesh,
+                    targetIdx: 5,
+                    speed: 0,
+                    topSpeed: CAR_SETTINGS[randomCar].topSpeed * 0.9,
+                    offset: new THREE.Vector3(Math.random()*10-5, 0, Math.random()*10-5)
+                });
+            }
+        } catch(e) {
+            console.error("Erro ao carregar modelos:", e);
+            alert("Erro ao carregar arquivos .glb. Verifique se os nomes estão corretos.");
         }
     }
 
@@ -240,86 +207,72 @@
         return model;
     }
 
-    // --- LOOP DE ANIMAÇÃO ---
     function animate() {
         if(!gameStarted) return;
         requestAnimationFrame(animate);
 
         const config = CAR_SETTINGS[player.currentCar];
         
-        // Controles Player
-        if(keys['w'] && player.speed < config.topSpeed) player.speed += 0.015;
-        if(keys['s']) player.speed -= 0.02;
-        player.speed *= 0.99; // Fricção
+        // Física Básica
+        if(keys['w'] && player.speed < config.topSpeed) player.speed += 0.02;
+        if(keys['s']) player.speed -= 0.03;
+        player.speed *= 0.985; // Fricção
 
-        if(Math.abs(player.speed) > 0.01) {
-            if(keys['a']) player.mesh.rotation.y += 0.03;
-            if(keys['d']) player.mesh.rotation.y -= 0.03;
+        if(Math.abs(player.speed) > 0.05) {
+            if(keys['a']) player.mesh.rotation.y += 0.04;
+            if(keys['d']) player.mesh.rotation.y -= 0.04;
         }
 
-        player.mesh.position.add(new THREE.Vector3(0,0,1).applyQuaternion(player.mesh.quaternion).multiplyScalar(player.speed));
-        
-        // Gravidade/Terreno Simples
-        const ray = new THREE.Raycaster(player.mesh.position.clone().add(new THREE.Vector3(0,50,0)), new THREE.Vector3(0,-1,0));
-        const inter = ray.intersectObject(trackMesh, true);
-        if(inter.length > 0) player.mesh.position.y = inter[0].point.y + 0.5;
+        const move = new THREE.Vector3(0,0,1).applyQuaternion(player.mesh.quaternion).multiplyScalar(player.speed);
+        player.mesh.position.add(move);
 
-        // Atualizar Velocímetro
-        document.getElementById('speedometer').innerText = Math.floor(player.speed * 100) + " KM/H";
+        // Colisão com chão
+        if(trackMesh) {
+            const ray = new THREE.Raycaster(player.mesh.position.clone().add(new THREE.Vector3(0,50,0)), new THREE.Vector3(0,-1,0));
+            const inter = ray.intersectObject(trackMesh, true);
+            if(inter.length > 0) player.mesh.position.y = inter[0].point.y + 0.2;
+        }
 
         updateAI();
         updateCamera();
+        document.getElementById('speedometer').innerText = Math.floor(player.speed * 100) + " KM/H";
         renderer.render(scene, camera);
     }
 
     function updateAI() {
         opponents.forEach(ai => {
-            if(player.route.length < 2) return;
+            const target = player.route[ai.targetIdx];
+            const targetVec = new THREE.Vector3(target.x, target.y, target.z).add(ai.offset);
             
-            let target = player.route[ai.targetIdx];
-            let pos = ai.mesh.position;
-            let targetVec = new THREE.Vector3(target.x, target.y, target.z).add(ai.offset);
-            
-            // Direção
             ai.mesh.lookAt(targetVec);
-            ai.speed = THREE.MathUtils.lerp(ai.speed, ai.config.topSpeed * 0.85, 0.01);
+            ai.speed = THREE.MathUtils.lerp(ai.speed, ai.topSpeed, 0.01);
             ai.mesh.position.add(new THREE.Vector3(0,0,1).applyQuaternion(ai.mesh.quaternion).multiplyScalar(ai.speed));
 
-            if(pos.distanceTo(targetVec) < 15) {
+            if(ai.mesh.position.distanceTo(targetVec) < 20) {
                 ai.targetIdx = (ai.targetIdx + 1) % player.route.length;
             }
         });
     }
 
     function updateCamera() {
-        const relativeCameraOffset = new THREE.Vector3(0, 15, -40);
-        const cameraOffset = relativeCameraOffset.applyMatrix4(player.mesh.matrixWorld);
-        camera.position.lerp(cameraOffset, 0.1);
+        const offset = new THREE.Vector3(0, 15, -45).applyMatrix4(player.mesh.matrixWorld);
+        camera.position.lerp(offset, 0.1);
         camera.lookAt(player.mesh.position.clone().add(new THREE.Vector3(0, 5, 0)));
     }
 
-    // --- INPUTS ---
     window.addEventListener('keydown', e => {
         keys[e.key.toLowerCase()] = true;
         if(e.shiftKey && debugMode) {
-            const p = player.mesh.position;
-            player.route.push({x: p.x, y: p.y, z: p.z});
-            document.getElementById('pt-count').innerText = player.route.length;
-            updateLine();
+            player.route.push({x: player.mesh.position.x, y: player.mesh.position.y, z: player.mesh.position.z});
+            console.log("Ponto Adicionado");
         }
         if(e.key === 'c' && debugMode) {
             navigator.clipboard.writeText(JSON.stringify(player.route));
-            alert("Rota copiada!");
+            alert("Traçado copiado para o console!");
         }
     });
     window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-    function updateLine() {
-        const points = player.route.map(p => new THREE.Vector3(p.x, p.y+0.5, p.z));
-        roadLine.geometry.setFromPoints(points);
-    }
-
-    initEngine();
 </script>
 </body>
 </html>
