@@ -120,7 +120,7 @@
         scene.add(player.mesh);
         
         // Posição inicial: Bem alto para o Raycast encontrar o chão da pista lá embaixo
-        player.mesh.position.set(-2000, 100, 0); 
+        player.mesh.position.set(2000, 100, 0); 
 
         document.getElementById('hud-layer').style.display = 'block';
         
@@ -163,7 +163,7 @@
 
         if (intersects.length > 0) {
             // Coloca o carro exatamente sobre o ponto detectado
-            player.mesh.position.y = intersects[0].point.y + 0.5; 
+            player.mesh.position.y = intersects[0].point.y + 0.7; 
             player.lastSafePos.copy(player.mesh.position);
         } else {
             // Se cair no vazio, volta para a última posição segura
@@ -189,6 +189,7 @@
 </script>
 </body>
 </html>
+
 
 
 
