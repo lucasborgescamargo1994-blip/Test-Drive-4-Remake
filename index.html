@@ -262,7 +262,7 @@
         requestAnimationFrame(animate);
         if(!gameStarted || isPaused) return;
         const config = CAR_SETTINGS[player.currentCar];
-        if(keys.w && player.speed < config.topSpeed) player.speed += 0.04;
+        if(keys.w && player.speed < config.topSpeed) player.speed += 0.02;
         if(keys.s) player.speed -= 0.12;
         player.speed *= 0.985;
         if(Math.abs(player.speed) > 0.05) {
@@ -286,6 +286,7 @@
 </script>
 </body>
 </html>
+
 
 
 
