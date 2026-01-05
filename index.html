@@ -13,10 +13,12 @@
             display: none;
         }
 
-        #menu-layer {
+        #menu-layer, #pause-layer {
             position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #222, #000);
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2500;
         }
+
+        #pause-layer { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; z-index: 3500; }
 
         .menu-box { width: 400px; text-align: center; }
         h1 { color: #ffcc00; font-style: italic; text-transform: uppercase; font-size: 40px; margin-bottom: 30px; }
@@ -47,6 +49,11 @@
             position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); 
             z-index: 4000; display: none; flex-direction: column; justify-content: center; align-items: center; 
         }
+
+        /* SLIDERS CAMERA */
+        .slider-wrap { margin: 15px 0; text-align: left; }
+        .slider-wrap label { font-size: 12px; color: #ffcc00; margin-bottom: 5px; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #ffcc00; }
     </style>
 </head>
 <body>
@@ -57,7 +64,27 @@
     <div style="font-size: 10px; color:#aaa; line-height: 1.4;">
         [P] Adicionar Ponto<br>
         [O] Exportar Código<br>
-        <span style="color:#ff4444;">[X] Limpar Rota</span>
+        [X] Limpar Rota<br>
+        [ESC] Pausar/Câmera
+    </div>
+</div>
+
+<div id="pause-layer">
+    <div class="menu-box">
+        <h1 style="font-size: 30px;">PAUSE</h1>
+        
+        <div class="slider-wrap">
+            <label>DISTÂNCIA DA CÂMERA</label>
+            <input type="range" id="cam-dist" min="5" max="30" value="12">
+        </div>
+        
+        <div class="slider-wrap">
+            <label>ALTURA DA CÂMERA</label>
+            <input type="range" id="cam-height" min="1" max="15" value="5">
+        </div>
+
+        <button class="btn btn-action" onclick="Game.resume()">CONTINUAR</button>
+        <button class="btn" onclick="location.reload()">MENU PRINCIPAL</button>
     </div>
 </div>
 
@@ -125,7 +152,6 @@
 
     const GITHUB_BASE = "https://raw.githubusercontent.com/lucasborgescamargo1994-blip/Test-Drive-4-Remake/main/";
     
-    // CONFIGURAÇÕES DOS CARROS
     const CAR_SETTINGS = {
         "cobra.glb": { scale: 6.5, topSpeed: 3.2, accelBase: 0.06 },
         "viper.glb": { scale: 7.2, topSpeed: 3.8, accelBase: 0.07 },
@@ -137,14 +163,17 @@
     };
 
     let scene, camera, renderer, trackMesh, roadLine;
-    let clock = new THREE.Clock();
     let keys = {};
     let cars = [];
     let player;
     let trackPath = [];
     let isDebug = false;
+    let isPaused = false;
     let raceSettings = { laps: 2, opps: 3 };
     let raceState = "MENU";
+
+    // Configurações de Câmera
+    let camSettings = { dist: 12, height: 5 };
 
     window.Menu = {
         toSetup: () => {
@@ -194,6 +223,17 @@
 
             raceState = "RACING";
             animate();
+        },
+        pause: () => {
+            isPaused = true;
+            document.getElementById('pause-layer').style.display = 'flex';
+        },
+        resume: () => {
+            isPaused = false;
+            document.getElementById('pause-layer').style.display = 'none';
+            // Atualizar valores dos sliders
+            camSettings.dist = parseFloat(document.getElementById('cam-dist').value);
+            camSettings.height = parseFloat(document.getElementById('cam-height').value);
         }
     };
 
@@ -220,7 +260,6 @@
             this.gear = 1;
             this.maxGears = 5;
             this.config = CAR_SETTINGS[model] || CAR_SETTINGS["cobra.glb"];
-            
             this.currentIdx = 1;
             this.lap = 1;
             this.finished = false;
@@ -243,42 +282,30 @@
             if(!this.mesh || this.finished) return;
 
             if(this.isPlayer) {
-                // ACELERAÇÃO PROGRESSIVA E MARCHAS
                 if(keys['w']) {
-                    // O torque diminui conforme a marcha sobe (1ª marcha arranca forte, 5ª é lenta)
                     let torque = this.config.accelBase * (1.2 - (this.gear * 0.15));
                     let maxSpeedInGear = (this.config.topSpeed / this.maxGears) * this.gear;
-
-                    if(this.speed < maxSpeedInGear) {
-                        this.speed += torque;
-                    }
-
-                    // Troca automática de marcha (ao atingir 90% da velocidade da marcha)
-                    if(this.speed > maxSpeedInGear * 0.9 && this.gear < this.maxGears) {
-                        this.gear++;
-                    }
+                    if(this.speed < maxSpeedInGear) this.speed += torque;
+                    if(this.speed > maxSpeedInGear * 0.9 && this.gear < this.maxGears) this.gear++;
                 } else {
-                    this.speed *= 0.99; // Freio motor suave
+                    this.speed *= 0.99;
                 }
 
                 if(keys['s']) {
-                    this.speed -= 0.12; // Freio
-                    // Reduz marcha ao frear muito
+                    this.speed -= 0.12;
                     let minSpeedForGear = (this.config.topSpeed / this.maxGears) * (this.gear - 1);
-                    if(this.speed < minSpeedForGear * 0.8 && this.gear > 1) {
-                        this.gear--;
-                    }
+                    if(this.speed < minSpeedForGear * 0.8 && this.gear > 1) this.gear--;
                 }
 
-                this.speed *= 0.985; // Atrito constante
+                this.speed *= 0.985;
 
                 if(Math.abs(this.speed) > 0.1) {
-                    const steerLimit = 0.045 * (1 - (this.speed / (this.config.topSpeed * 1.5))); // Menos esterço em alta
-                    if(keys['a']) this.mesh.rotation.y += steerLimit;
-                    if(keys['d']) this.mesh.rotation.y -= steerLimit;
+                    const steerLimit = 0.045 * (1 - (this.speed / (this.config.topSpeed * 1.5)));
+                    // INVERTIDO A e D (A vira para esquerda, D para direita)
+                    if(keys['d']) this.mesh.rotation.y += steerLimit;
+                    if(keys['a']) this.mesh.rotation.y -= steerLimit;
                 }
             } else {
-                // AI SIMPLES
                 const target = trackPath[this.currentIdx] || new THREE.Vector3(0,0,0);
                 const lookPos = new THREE.Vector3(target.x, this.mesh.position.y, target.z);
                 this.mesh.lookAt(lookPos);
@@ -344,7 +371,7 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.Fog(0x87CEEB, 200, 1500);
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 5000);
+        camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 1, 5000);
         
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -370,7 +397,13 @@
         window.addEventListener('keydown', e => {
             const k = e.key.toLowerCase();
             keys[k] = true;
-            if(isDebug) {
+
+            if(e.key === "Escape" && raceState === "RACING") {
+                if(isPaused) Game.resume();
+                else Game.pause();
+            }
+
+            if(isDebug && !isPaused) {
                 if(k === 'p' && player) {
                     trackPath.push(player.mesh.position.clone());
                     if(roadLine) roadLine.geometry.setFromPoints(trackPath);
@@ -401,7 +434,13 @@
         requestAnimationFrame(animate);
         if(raceState !== "RACING") return;
 
-        cars.forEach(c => c.update());
+        // Sliders de Câmera atualizam em tempo real
+        camSettings.dist = parseFloat(document.getElementById('cam-dist').value);
+        camSettings.height = parseFloat(document.getElementById('cam-height').value);
+
+        if(!isPaused) {
+            cars.forEach(c => c.update());
+        }
 
         if(player && player.mesh) {
             const displaySpeed = Math.floor(Math.abs(player.speed) * 65);
@@ -420,7 +459,8 @@
             const suf = ["st","nd","rd","th"];
             document.getElementById('hud-pos').innerText = rank + (rank<=3?suf[rank-1]:"th");
 
-            const camOff = new THREE.Vector3(0, 5, -12).applyQuaternion(player.mesh.quaternion);
+            // Câmera dinâmica usando as configurações do Menu de Pausa
+            const camOff = new THREE.Vector3(0, camSettings.height, -camSettings.dist).applyQuaternion(player.mesh.quaternion);
             camera.position.lerp(player.mesh.position.clone().add(camOff), 0.1);
             camera.lookAt(player.mesh.position.clone().add(new THREE.Vector3(0, 2, 0)));
         }
@@ -430,4 +470,3 @@
 </script>
 </body>
 </html>
-
