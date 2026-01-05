@@ -461,7 +461,7 @@
 
             // Câmera dinâmica usando as configurações do Menu de Pausa
             const camOff = new THREE.Vector3(0, camSettings.height, -camSettings.dist).applyQuaternion(player.mesh.quaternion);
-            camera.position.lerp(player.mesh.position.clone().add(camOff), 0.1);
+            camera.position.lerp(player.mesh.position.clone().add(camOff), 0.5);
             camera.lookAt(player.mesh.position.clone().add(new THREE.Vector3(0, 2, 0)));
         }
 
