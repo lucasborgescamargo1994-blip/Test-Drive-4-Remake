@@ -51,9 +51,13 @@
 <body>
 
 <div id="debug-panel">
-    <div style="color: #ffcc00;">DEV MODE</div>
-    <div>PONTOS: <span id="dbg-points">0</span></div>
-    <div style="font-size: 9px; color:#aaa;">[P] Salvar Ponto | [O] Exportar</div>
+    <div style="color: #ffcc00; font-weight: bold;">DEV MODE</div>
+    <div style="margin: 5px 0;">PONTOS: <span id="dbg-points">0</span></div>
+    <div style="font-size: 10px; color:#aaa; line-height: 1.4;">
+        [P] Adicionar Ponto<br>
+        [O] Exportar Código<br>
+        <span style="color:#ff4444;">[X] Limpar Rota</span>
+    </div>
 </div>
 
 <div id="menu-layer">
@@ -371,20 +375,47 @@
         trackMesh.scale.set(150, 150, 150);
         scene.add(trackMesh);
 
-        window.addEventListener('keydown', e => {
-            keys[e.key.toLowerCase()] = true;
-            if(isDebug && e.key.toLowerCase() === 'p' && player) {
+       window.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        keys[k] = true;
+
+        // LÓGICA DO DEBUG
+        if(isDebug) {
+            // [P] Adicionar Ponto
+            if(k === 'p' && player) {
                 trackPath.push(player.mesh.position.clone());
                 if(roadLine) {
                     roadLine.geometry.setFromPoints(trackPath);
-                    document.getElementById('dbg-points').innerText = trackPath.length;
+                } else {
+                    // Cria a linha se for o primeiro ponto
+                    const lineGeo = new THREE.BufferGeometry().setFromPoints(trackPath);
+                    roadLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xffff00 }));
+                    scene.add(roadLine);
+                }
+                document.getElementById('dbg-points').innerText = trackPath.length;
+            }
+
+            // [O] Exportar
+            if(k === 'o') {
+                const json = JSON.stringify(trackPath.map(p => ({x:p.x, y:p.y, z:p.z})));
+                console.log(json);
+                alert("Caminho copiado para o Console (F12)!");
+            }
+
+            // [X] LIMPAR ROTA (NOVA FUNÇÃO)
+            if(k === 'x') {
+                if(trackPath.length > 0 && confirm("⚠️ TEM CERTEZA?\nIsso apagará todo o traçado atual da memória.")) {
+                    trackPath = []; // Zera o array
+                    if(roadLine) {
+                        scene.remove(roadLine); // Remove a linha visual
+                        roadLine = null; // Reseta a variável
+                    }
+                    document.getElementById('dbg-points').innerText = "0";
+                    console.log("Rota limpa!");
                 }
             }
-            if(isDebug && e.key.toLowerCase() === 'o') {
-                console.log(JSON.stringify(trackPath.map(p=>({x:p.x,y:p.y,z:p.z}))));
-                alert("Caminho copiado para o Console (F12)");
-            }
-        });
+        }
+    });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
     }
 
@@ -427,3 +458,4 @@
 </script>
 </body>
 </html>
+
