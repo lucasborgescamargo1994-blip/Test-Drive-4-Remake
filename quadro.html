@@ -161,7 +161,6 @@
   .btn{
     border:none;
     border-radius:12px;
-    padding:99px 12px;
     padding:9px 12px;
     font-family:'Baloo 2', sans-serif;
     font-weight:700;
@@ -235,9 +234,15 @@
   }
   .log-item b{color:var(--ink);}
 
-  .reset-row{text-align:center;margin-top:26px;}
+  .reset-row{
+    text-align:center;
+    margin-top:26px;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
   .reset-row button{
-    background:transparent;
     border:2px solid rgba(255,255,255,.35);
     color:#DCD5FF;
     font-family:'Baloo 2', sans-serif;
@@ -246,8 +251,27 @@
     padding:9px 18px;
     border-radius:999px;
     cursor:pointer;
+    transition:background .2s;
   }
-  .reset-row button:hover{background:rgba(255,255,255,.1);}
+  .btn-reset{background:transparent;}
+  .btn-reset:hover{background:rgba(255,255,255,.1);}
+  
+  .btn-save{
+    background:linear-gradient(180deg, var(--mint), var(--mint-deep)) !important;
+    color:#fff !important;
+    border:none !important;
+  }
+  .btn-save:hover{filter:brightness(1.08);}
+
+  .save-toast{
+    color:var(--mint);
+    font-weight:700;
+    font-size:13px;
+    text-align:center;
+    margin-top:8px;
+    min-height:18px;
+    transition:opacity .3s;
+  }
 
   @keyframes pop{
     0%{transform:scale(0);opacity:0;}
@@ -272,7 +296,7 @@
     <h1>Quadro de Estrelinhas ⭐</h1>
     <div class="name-row">
       <span style="color:#DCD5FF;font-weight:700;">de</span>
-      <input id="kidName" type="text" value="Miguel" maxlength="18" onchange="saveData()">
+      <input id="kidName" type="text" value="Miguel" maxlength="18" onchange="manualSave()">
     </div>
   </header>
 
@@ -308,8 +332,10 @@
   </div>
 
   <div class="reset-row">
-    <button onclick="resetAll()">Recomeçar o dia</button>
+    <button class="btn-save" onclick="manualSave()">💾 Salvar no Navegador</button>
+    <button class="btn-reset" onclick="resetAll()">Recomeçar o dia</button>
   </div>
+  <div id="saveToast" class="save-toast"></div>
 
   <footer>Feito com carinho ✨ os dados estão salvos no armazenamento local.</footer>
 </div>
@@ -336,6 +362,15 @@ function saveData() {
     kidName: document.getElementById('kidName').value
   };
   localStorage.setItem('quadroEstrelinhasData', JSON.stringify(data));
+}
+
+function manualSave() {
+  saveData();
+  const toast = document.getElementById('saveToast');
+  toast.textContent = "✓ Dados salvos no cache com sucesso!";
+  setTimeout(() => {
+    toast.textContent = "";
+  }, 2500);
 }
 
 function loadData() {
