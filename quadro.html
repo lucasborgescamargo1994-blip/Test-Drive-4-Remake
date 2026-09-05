@@ -161,6 +161,7 @@
   .btn{
     border:none;
     border-radius:12px;
+    padding:99px 12px;
     padding:9px 12px;
     font-family:'Baloo 2', sans-serif;
     font-weight:700;
@@ -271,7 +272,7 @@
     <h1>Quadro de Estrelinhas ⭐</h1>
     <div class="name-row">
       <span style="color:#DCD5FF;font-weight:700;">de</span>
-      <input id="kidName" type="text" value="Miguel" maxlength="18">
+      <input id="kidName" type="text" value="Miguel" maxlength="18" onchange="saveData()">
     </div>
   </header>
 
@@ -310,7 +311,7 @@
     <button onclick="resetAll()">Recomeçar o dia</button>
   </div>
 
-  <footer>Feito com carinho ✨ os dados ficam só nesta sessão do navegador.</footer>
+  <footer>Feito com carinho ✨ os dados estão salvos no armazenamento local.</footer>
 </div>
 
 <script>
@@ -323,6 +324,38 @@ let tasks = [
 ];
 let nextId = 4;
 let log = [];
+
+// Funções de Persistência via localStorage
+function saveData() {
+  const data = {
+    stars,
+    negatives,
+    tasks,
+    nextId,
+    log,
+    kidName: document.getElementById('kidName').value
+  };
+  localStorage.setItem('quadroEstrelinhasData', JSON.stringify(data));
+}
+
+function loadData() {
+  const saved = localStorage.getItem('quadroEstrelinhasData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      stars = data.stars ?? 0;
+      negatives = data.negatives ?? 0;
+      tasks = data.tasks ?? [];
+      nextId = data.nextId ?? 1;
+      log = data.log ?? [];
+      if (data.kidName) {
+        document.getElementById('kidName').value = data.kidName;
+      }
+    } catch (e) {
+      console.error("Erro ao carregar dados do cache:", e);
+    }
+  }
+}
 
 function renderStats(){
   document.getElementById('starCount').textContent = stars;
@@ -347,7 +380,6 @@ function renderJar(){
   const group = document.getElementById('starGroup');
   group.innerHTML = "";
   const shown = Math.min(stars, 24);
-  // jar interior bounds (approx)
   const minX = 40, maxX = 120, minY = 90, maxY = 178;
   const cols = 6;
   for (let i = 0; i < shown; i++){
@@ -429,6 +461,7 @@ function markTask(id, success){
   }
   renderStats();
   renderTasks();
+  saveData();
 }
 
 function addTask(){
@@ -438,11 +471,13 @@ function addTask(){
   tasks.push({ id: nextId++, name, count: 0 });
   input.value = "";
   renderTasks();
+  saveData();
 }
 
 function removeTask(id){
   tasks = tasks.filter(t => t.id !== id);
   renderTasks();
+  saveData();
 }
 
 function resetAll(){
@@ -454,12 +489,15 @@ function resetAll(){
   renderStats();
   renderTasks();
   renderLog();
+  saveData();
 }
 
 document.getElementById('newTask').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addTask();
 });
 
+// Inicialização
+loadData();
 renderStats();
 renderTasks();
 renderLog();
