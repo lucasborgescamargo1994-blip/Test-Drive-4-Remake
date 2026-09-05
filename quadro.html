@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadro de Estrelinhas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night-1:#211A4A;
+    --night-2:#3B2C78;
+    --card:#FFF8EC;
+    --card-line:#EEE1C8;
+    --gold:#FFC94A;
+    --gold-deep:#E8A317;
+    --mint:#57D3A6;
+    --mint-deep:#2FAE85;
+    --coral:#FF6F6F;
+    --coral-deep:#E24B4B;
+    --ink:#2B2450;
+    --ink-soft:#6A6390;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1.2px 1.2px at 10% 20%, #ffffff 100%, transparent 100%),
+      radial-gradient(1.2px 1.2px at 80% 15%, #ffffff 100%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 8%, #ffffff 100%, transparent 100%),
+      radial-gradient(1px 1px at 30% 35%, #ffffff 90%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 70% 40%, #ffffff 90%, transparent 100%),
+      radial-gradient(1px 1px at 90% 60%, #ffffff 90%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 15% 65%, #ffffff 90%, transparent 100%),
+      linear-gradient(160deg, var(--night-1), var(--night-2) 60%, #4A3487 100%);
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:22px;}
+  .eyebrow{
+    color:#C9BEFF;
+    font-weight:800;
+    letter-spacing:.14em;
+    font-size:12px;
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(28px,7vw,38px);
+    color:#fff;
+    margin:0 0 10px;
+    line-height:1.15;
+  }
+  .name-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+  .name-row input{
+    font-family:'Baloo 2', sans-serif;
+    font-size:20px;
+    color:#fff;
+    background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.25);
+    border-radius:12px;
+    padding:6px 14px;
+    text-align:center;
+    outline:none;
+    max-width:220px;
+  }
+  .name-row input:focus{border-color:var(--gold);}
+
+  /* JAR */
+  .jar-card{
+    background:var(--card);
+    border-radius:28px;
+    padding:22px 20px 18px;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,.55);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    margin-bottom:20px;
+    border:1px solid var(--card-line);
+  }
+  .jar-svg{width:180px;height:220px;}
+  .jar-caption{
+    font-family:'Baloo 2', sans-serif;
+    font-size:15px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+  .stats{
+    display:flex;
+    gap:14px;
+    margin-top:4px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .stat{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:2px solid var(--card-line);
+    border-radius:16px;
+    padding:8px 16px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:18px;
+  }
+  .stat.star{color:var(--gold-deep);}
+  .stat.neg{color:var(--coral-deep);}
+
+  /* SECTIONS */
+  .section-title{
+    font-family:'Baloo 2', sans-serif;
+    color:#fff;
+    font-size:18px;
+    margin:26px 0 10px 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:22px;
+    padding:14px;
+    border:1px solid var(--card-line);
+    box-shadow:0 14px 30px -18px rgba(0,0,0,.5);
+  }
+
+  .task{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--card-line);
+    border-radius:16px;
+    padding:10px 12px;
+    margin-bottom:10px;
+  }
+  .task:last-child{margin-bottom:0;}
+  .task-name{
+    flex:1;
+    font-weight:700;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .task-badge{
+    font-size:12px;
+    font-weight:800;
+    color:var(--ink-soft);
+    background:#F2EEE3;
+    border-radius:999px;
+    padding:3px 9px;
+    min-width:20px;
+    text-align:center;
+  }
+  .btn{
+    border:none;
+    border-radius:12px;
+    padding:9px 12px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    color:#fff;
+    transition:transform .12s ease, filter .12s ease;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(.93);}
+  .btn.yes{background:linear-gradient(180deg,var(--mint),var(--mint-deep));}
+  .btn.no{background:linear-gradient(180deg,var(--coral),var(--coral-deep));}
+  .btn.yes:hover,.btn.no:hover{filter:brightness(1.06);}
+  .btn.remove{
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:16px;
+    padding:4px 8px;
+  }
+
+  .add-row{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .add-row input{
+    flex:1;
+    border:2px solid var(--card-line);
+    border-radius:12px;
+    padding:10px 12px;
+    font-family:'Nunito',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    outline:none;
+  }
+  .add-row input:focus{border-color:var(--mint-deep);}
+  .add-row button{
+    background:linear-gradient(180deg,#8C6FE6,#6E4FD4);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:10px 16px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:14px;
+    padding:14px 6px;
+  }
+
+  .log{
+    max-height:190px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column-reverse;
+    gap:7px;
+  }
+  .log-item{
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#fff;
+    border-radius:10px;
+    padding:7px 10px;
+    border:1px solid var(--card-line);
+  }
+  .log-item b{color:var(--ink);}
+
+  .reset-row{text-align:center;margin-top:26px;}
+  .reset-row button{
+    background:transparent;
+    border:2px solid rgba(255,255,255,.35);
+    color:#DCD5FF;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .reset-row button:hover{background:rgba(255,255,255,.1);}
+
+  @keyframes pop{
+    0%{transform:scale(0);opacity:0;}
+    60%{transform:scale(1.25);opacity:1;}
+    100%{transform:scale(1);}
+  }
+  .pop-star{animation:pop .4s ease;}
+
+  footer{
+    text-align:center;
+    color:#B9AEE8;
+    font-size:12px;
+    margin-top:30px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Combinado é combinado</div>
+    <h1>Quadro de Estrelinhas ⭐</h1>
+    <div class="name-row">
+      <span style="color:#DCD5FF;font-weight:700;">de</span>
+      <input id="kidName" type="text" value="Miguel" maxlength="18">
+    </div>
+  </header>
+
+  <div class="jar-card">
+    <svg id="jarSvg" class="jar-svg" viewBox="0 0 160 200">
+      <!-- jar outline -->
+      <path d="M55 18 h50 v18 c14 6 24 20 24 40 v90 c0 18 -15 32 -33 32 H64 c-18 0 -33 -14 -33 -32 V76 c0 -20 10 -34 24 -40 Z"
+            fill="#ffffff" stroke="#E8DFC8" stroke-width="3"/>
+      <path d="M55 18 h50 v14 h-50 z" fill="#EFE7D3" stroke="#E8DFC8" stroke-width="3"/>
+      <g id="starGroup"></g>
+    </svg>
+    <div class="jar-caption" id="jarCaption">O frasco está vazio. Vamos encher de estrelas!</div>
+    <div class="stats">
+      <div class="stat star">⭐ <span id="starCount">0</span> estrelas</div>
+      <div class="stat neg">⚠️ <span id="negCount">0</span> negativos</div>
+    </div>
+  </div>
+
+  <div class="section-title">✅ Combinados de hoje</div>
+  <div class="card">
+    <div id="taskList"></div>
+    <div id="emptyMsg" class="empty" style="display:none;">Nenhum combinado ainda. Adicione um abaixo!</div>
+    <div class="add-row">
+      <input id="newTask" type="text" placeholder="Ex: Arrumar a cama" maxlength="40">
+      <button onclick="addTask()">Adicionar</button>
+    </div>
+  </div>
+
+  <div class="section-title">📜 Histórico</div>
+  <div class="card">
+    <div id="log" class="log"></div>
+    <div id="emptyLog" class="empty">Nenhuma marcação ainda hoje.</div>
+  </div>
+
+  <div class="reset-row">
+    <button onclick="resetAll()">Recomeçar o dia</button>
+  </div>
+
+  <footer>Feito com carinho ✨ os dados ficam só nesta sessão do navegador.</footer>
+</div>
+
+<script>
+let stars = 0;
+let negatives = 0;
+let tasks = [
+  { id: 1, name: "Arrumar a cama", count: 0 },
+  { id: 2, name: "Fazer a lição de casa", count: 0 },
+  { id: 3, name: "Escovar os dentes", count: 0 },
+];
+let nextId = 4;
+let log = [];
+
+function renderStats(){
+  document.getElementById('starCount').textContent = stars;
+  document.getElementById('negCount').textContent = negatives;
+  const captions = [
+    "O frasco está vazio. Vamos encher de estrelas!",
+    "Já começou a brilhar! Continue assim.",
+    "Muito bem! O frasco está enchendo.",
+    "Uau, olha quantas estrelas!",
+    "Frasco quase cheio de orgulho!",
+  ];
+  const capEl = document.getElementById('jarCaption');
+  if (stars <= 0) capEl.textContent = captions[0];
+  else if (stars < 5) capEl.textContent = captions[1];
+  else if (stars < 10) capEl.textContent = captions[2];
+  else if (stars < 15) capEl.textContent = captions[3];
+  else capEl.textContent = captions[4];
+  renderJar();
+}
+
+function renderJar(){
+  const group = document.getElementById('starGroup');
+  group.innerHTML = "";
+  const shown = Math.min(stars, 24);
+  // jar interior bounds (approx)
+  const minX = 40, maxX = 120, minY = 90, maxY = 178;
+  const cols = 6;
+  for (let i = 0; i < shown; i++){
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const cellW = (maxX - minX) / cols;
+    const x = minX + cellW * col + cellW/2 + (col % 2 === 0 ? -2 : 2);
+    const y = maxY - row * 14;
+    if (y < minY) break;
+    const star = document.createElementNS("http://www.w3.org/2000/svg","text");
+    star.setAttribute("x", x);
+    star.setAttribute("y", y);
+    star.setAttribute("font-size", "14");
+    star.setAttribute("text-anchor", "middle");
+    star.setAttribute("class", "pop-star");
+    star.textContent = "⭐";
+    group.appendChild(star);
+  }
+}
+
+function addLog(text){
+  const time = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  log.push({text, time});
+  renderLog();
+}
+
+function renderLog(){
+  const el = document.getElementById('log');
+  const empty = document.getElementById('emptyLog');
+  el.innerHTML = "";
+  if (log.length === 0){
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  log.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `<b>${item.time}</b> — ${item.text}`;
+    el.appendChild(div);
+  });
+}
+
+function renderTasks(){
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('emptyMsg');
+  list.innerHTML = "";
+  if (tasks.length === 0){
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+  }
+  tasks.forEach(task => {
+    const row = document.createElement('div');
+    row.className = 'task';
+    row.innerHTML = `
+      <span class="task-name">${task.name}</span>
+      <span class="task-badge">${task.count}x hoje</span>
+      <button class="btn yes" onclick="markTask(${task.id}, true)">Cumpriu ⭐</button>
+      <button class="btn no" onclick="markTask(${task.id}, false)">Não cumpriu ✖</button>
+      <button class="btn remove" onclick="removeTask(${task.id})" title="Remover combinado">🗑</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function markTask(id, success){
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  task.count++;
+  const kid = document.getElementById('kidName').value || "a criança";
+  if (success){
+    stars++;
+    addLog(`${kid} cumpriu "${task.name}" e ganhou uma estrelinha ⭐`);
+  } else {
+    negatives++;
+    if (stars > 0) stars--;
+    addLog(`${kid} não cumpriu "${task.name}", recebeu um negativo e perdeu uma estrelinha ✖`);
+  }
+  renderStats();
+  renderTasks();
+}
+
+function addTask(){
+  const input = document.getElementById('newTask');
+  const name = input.value.trim();
+  if (!name) return;
+  tasks.push({ id: nextId++, name, count: 0 });
+  input.value = "";
+  renderTasks();
+}
+
+function removeTask(id){
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+}
+
+function resetAll(){
+  if (!confirm("Tem certeza que quer recomeçar o dia? Isso zera estrelas, negativos e o histórico.")) return;
+  stars = 0;
+  negatives = 0;
+  log = [];
+  tasks.forEach(t => t.count = 0);
+  renderStats();
+  renderTasks();
+  renderLog();
+}
+
+document.getElementById('newTask').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addTask();
+});
+
+renderStats();
+renderTasks();
+renderLog();
+</script>
+</body>
+</html>
