@@ -302,20 +302,33 @@
   .btn-reset{background:transparent;}
   .btn-reset:hover{background:rgba(255,255,255,.1);}
   
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    margin-bottom:14px;
+  }
   .btn-save{
-    background:linear-gradient(180deg, var(--mint), var(--mint-deep)) !important;
-    color:#fff !important;
-    border:none !important;
+    background:linear-gradient(180deg, var(--mint), var(--mint-deep));
+    color:#fff;
+    border:none;
+    border-radius:999px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:9px 20px;
+    cursor:pointer;
+    box-shadow:0 8px 18px -8px rgba(0,0,0,.6);
   }
   .btn-save:hover{filter:brightness(1.08);}
+  .btn-save:active{transform:scale(.95);}
 
   .save-toast{
     color:var(--mint);
     font-weight:700;
     font-size:13px;
-    text-align:center;
-    margin-top:8px;
-    min-height:18px;
+    text-align:right;
     transition:opacity .3s;
   }
 
@@ -430,6 +443,11 @@
 <body>
 <div class="wrap">
 
+  <div class="topbar">
+    <div id="saveToast" class="save-toast"></div>
+    <button class="btn-save" onclick="manualSave()">💾 Salvar</button>
+  </div>
+
   <header>
     <div class="eyebrow">Combinado é combinado</div>
     <h1>Quadro de Estrelinhas ⭐</h1>
@@ -479,10 +497,8 @@
   </div>
 
   <div class="reset-row">
-    <button class="btn-save" onclick="manualSave()">💾 Salvar no Navegador</button>
     <button class="btn-reset" onclick="resetAll()">Recomeçar o dia</button>
   </div>
-  <div id="saveToast" class="save-toast"></div>
 
   <footer>Feito com carinho ✨ os dados estão salvos no armazenamento local.</footer>
 </div>
@@ -541,7 +557,7 @@ function saveData() {
 function manualSave() {
   saveData();
   const toast = document.getElementById('saveToast');
-  toast.textContent = "✓ Dados salvos no cache com sucesso!";
+  toast.textContent = "✓ Salvo!";
   setTimeout(() => {
     toast.textContent = "";
   }, 2500);
